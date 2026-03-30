@@ -827,43 +827,62 @@ function renderMeals(){
 }
 
 function estimateFoodMacros(mealId, foodName, foodIdx){
-  var prompt = '你是專業台灣飲食營養師。估算食物熱量與三大營養素。只回答JSON格式，格式：{"k":數字,"p":數字,"c":數字,"f":數字,"note":"短備註"}。食物：'+foodName;
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      contents: [{parts: [{text: prompt}]}],
-      generationConfig: {responseMimeType: "application/json"}
-    })
-  }).then(function(r){ return r.json(); }).then(function(d){
-    var txt = d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '{}';
-    try{
-      var parsed = JSON.parse(txt.replace(/```json|```/g,'').trim());
-      var meal = G.meals.find(function(m){ return m.id===mealId; });
-      if(meal&&meal.foods[foodIdx]){
-        meal.foods[foodIdx].kcal = parsed.k||parsed.kcal||0;
-        meal.foods[foodIdx].p = parsed.p||parsed.protein_g||0;
-        meal.foods[foodIdx].c = parsed.c||parsed.carb_g||0;
-        meal.foods[foodIdx].f = parsed.f||parsed.fat_g||0;
-        meal.foods[foodIdx].note = parsed.note||'';
-        meal.foods[foodIdx].isLoading = false; // 解除載入狀態
-        renderMeals(); updateDashboardUI(); scheduleAutoSave();
-      }
-    }catch(e){
-      var meal = G.meals.find(function(m){ return m.id===mealId; });
-      if(meal&&meal.foods[foodIdx]){
-        meal.foods[foodIdx].isLoading = false;
-        meal.foods[foodIdx].note = '數值解析失敗，請手動修正';
-        renderMeals();
-      }
+  // Key 未設定時直接提示
+  if(!GEMINI_API_KEY){
+    var mealX = G.meals.find(function(m){ return m.id===mealId; });
+    if(mealX && mealX.foods[foodIdx]){
+      mealX.foods[foodIdx].isLoading = false;
+      mealX.foods[foodIdx].note = '⚠️ 請先在設定頁填入 Gemini API Key';
     }
-  }).catch(function(err){
-      var meal = G.meals.find(function(m){ return m.id===mealId; });
-      if(meal&&meal.foods[foodIdx]){
-        meal.foods[foodIdx].isLoading = false;
-        meal.foods[foodIdx].note = '連線失敗，請確認 API Key 或瀏覽器環境：' + err.message;
-        renderMeals();
-      }
+    renderMeals();
+    toast('請先在「設定」頁填入 Gemini API Key');
+    return;
+  }
+
+  var prompt =
+    '你是專業台灣飲食營養師。估算下列食物的熱量與三大營養素（以台灣常見份量為基準）。' +
+    '只回答純 JSON，不加任何說明或 markdown，格式：' +
+    '{"k":熱量整數,"p":蛋白質整數,"c":碳水整數,"f":脂肪整數,"note":"10字內備註"}。' +
+    '食物：' + foodName;
+
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      contents: [{parts: [{text: prompt}]}],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+    })
+  })
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(function(d){
+    var txt = '';
+    try { txt = d.candidates[0].content.parts[0].text || '{}'; } catch(e){ txt = '{}'; }
+    txt = txt.replace(/```json|```/g,'').trim();
+    var m2 = txt.match(/\{[\s\S]*\}/);
+    if(m2) txt = m2[0];
+    var parsed = JSON.parse(txt);
+    var meal = G.meals.find(function(m){ return m.id===mealId; });
+    if(meal && meal.foods[foodIdx]){
+      meal.foods[foodIdx].kcal      = Math.round(parsed.k || parsed.kcal      || 0);
+      meal.foods[foodIdx].p         = Math.round(parsed.p || parsed.protein_g || 0);
+      meal.foods[foodIdx].c         = Math.round(parsed.c || parsed.carb_g    || 0);
+      meal.foods[foodIdx].f         = Math.round(parsed.f || parsed.fat_g     || 0);
+      meal.foods[foodIdx].note      = parsed.note || '';
+      meal.foods[foodIdx].isLoading = false;
+      renderMeals(); updateDashboardUI(); scheduleAutoSave();
+    }
+  })
+  .catch(function(err){
+    var meal = G.meals.find(function(m){ return m.id===mealId; });
+    if(meal && meal.foods[foodIdx]){
+      meal.foods[foodIdx].isLoading = false;
+      meal.foods[foodIdx].note = '估算失敗，請重試（' + (err.message||'未知錯誤') + '）';
+      renderMeals();
+    }
+    console.error('estimateFoodMacros:', err);
   });
 }
 
@@ -923,26 +942,31 @@ function analyzeFoodText(){
 
   var prompt = '你是專業台灣營養師。根據描述估算熱量與主要營養素。\n食物：'+input+'\n\nJSON格式回答：{"kcal":整數, "protein_g":整數, "carb_g":整數, "fat_g":整數, "note":"一句說明", "meal_name":"簡短食物名稱"}\n只回答JSON。';
 
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
+  if(!GEMINI_API_KEY){ resultEl.innerHTML='⚠️ 請先在設定頁填入 Gemini API Key'; return; }
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       contents: [{parts: [{text: prompt}]}],
-      generationConfig: {responseMimeType: "application/json"}
+      generationConfig: {responseMimeType:'application/json', temperature:0.1}
     })
-  }).then(function(r){ return r.json(); }).then(function(d){
-    var txt = d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '{}';
-    try{
-      var p = JSON.parse(txt.replace(/```json|```/g,'').trim());
-      G.pendingAiResult = p;
-      G.pendingAiResult.inputText = input; // 保留原始輸入
-      resultEl.innerHTML =
-        '📊 <strong>'+(input)+'</strong><br>'+
-        '熱量：'+p.kcal+' kcal　|　蛋白質：'+p.protein_g+'g　|　碳水：'+p.carb_g+'g　|　脂肪：'+p.fat_g+'g<br>'+
-        '<span style="font-size:11px;color:var(--t3)">'+p.note+'</span>';
-      document.getElementById('ai-apply-btn').className='ai-result-apply show';
-    } catch(e){ resultEl.innerHTML='無法解析結果，請重試'; }
-  }).catch(function(err){ resultEl.innerHTML='連線失敗，請確認 API Key 或預覽環境限制：' + err.message; });
+  })
+  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(function(d){
+    var txt='{}';
+    try{ txt=d.candidates[0].content.parts[0].text||'{}'; }catch(e){}
+    txt=txt.replace(/```json|```/g,'').trim();
+    var m2=txt.match(/\{[\s\S]*\}/); if(m2) txt=m2[0];
+    var p=JSON.parse(txt);
+    G.pendingAiResult=p;
+    G.pendingAiResult.inputText=input;
+    resultEl.innerHTML=
+      '📊 <strong>'+input+'</strong><br>'+
+      '熱量：'+(p.kcal||0)+' kcal　|　蛋白質：'+(p.protein_g||0)+'g　|　碳水：'+(p.carb_g||0)+'g　|　脂肪：'+(p.fat_g||0)+'g<br>'+
+      '<span style="font-size:11px;color:var(--t3)">'+(p.note||'')+'</span>';
+    document.getElementById('ai-apply-btn').className='ai-result-apply show';
+  })
+  .catch(function(err){ resultEl.innerHTML='⚠️ 分析失敗：'+(err.message||'請確認 API Key 及網路'); });
 }
 
 function analyzeFoodPhoto(input){
@@ -956,30 +980,30 @@ function analyzeFoodPhoto(input){
     var b64 = e.target.result.split(',')[1];
     var prompt = '你是專業台灣營養師。分析照片食物或營養標籤。JSON格式回答：{"kcal":整數, "protein_g":整數, "carb_g":整數, "fat_g":整數, "note":"一句說明", "meal_name":"簡短名稱"}\n只回答JSON。';
 
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
+    if(!GEMINI_API_KEY){ resultEl.innerHTML='⚠️ 請先在設定頁填入 Gemini API Key'; return; }
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        contents: [{
-          parts: [
-            {text: prompt},
-            {inlineData: {mimeType: file.type, data: b64}}
-          ]
-        }],
-        generationConfig: {responseMimeType: "application/json"}
+        contents: [{parts: [{text: prompt},{inlineData:{mimeType:file.type,data:b64}}]}],
+        generationConfig: {responseMimeType:'application/json', temperature:0.1}
       })
-    }).then(function(r){ return r.json(); }).then(function(d){
-      var txt = d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '{}';
-      try{
-        var p = JSON.parse(txt.replace(/```json|```/g,'').trim());
-        G.pendingAiResult = p;
-        resultEl.innerHTML =
-          '📊 <strong>'+(p.meal_name||'照片食物')+'</strong><br>'+
-          '熱量：'+p.kcal+' kcal　|　蛋白質：'+p.protein_g+'g　|　碳水：'+p.carb_g+'g　|　脂肪：'+p.fat_g+'g<br>'+
-          '<span style="font-size:11px;color:var(--t3)">'+p.note+'</span>';
-        document.getElementById('ai-apply-btn').className='ai-result-apply show';
-      } catch(e){ resultEl.innerHTML='無法解析，請重試'; }
-    }).catch(function(err){ resultEl.innerHTML='連線失敗，請確認 API Key 或預覽環境限制：' + err.message; });
+    })
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(d){
+      var txt='{}';
+      try{ txt=d.candidates[0].content.parts[0].text||'{}'; }catch(e){}
+      txt=txt.replace(/```json|```/g,'').trim();
+      var m2=txt.match(/\{[\s\S]*\}/); if(m2) txt=m2[0];
+      var p=JSON.parse(txt);
+      G.pendingAiResult=p;
+      resultEl.innerHTML=
+        '📊 <strong>'+(p.meal_name||'照片食物')+'</strong><br>'+
+        '熱量：'+(p.kcal||0)+' kcal　|　蛋白質：'+(p.protein_g||0)+'g　|　碳水：'+(p.carb_g||0)+'g　|　脂肪：'+(p.fat_g||0)+'g<br>'+
+        '<span style="font-size:11px;color:var(--t3)">'+(p.note||'')+'</span>';
+      document.getElementById('ai-apply-btn').className='ai-result-apply show';
+    })
+    .catch(function(err){ resultEl.innerHTML='⚠️ 辨識失敗：'+(err.message||'請確認 API Key 及網路'); });
   };
   reader.readAsDataURL(file);
 }
@@ -1095,7 +1119,10 @@ function bgSave(){
   saveItem(todayKey(), record);
 
   if(GAS_URL){
-    fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(record),headers:{'Content-Type':'application/json'}})
+    // 加入 upsert:true 讓 Apps Script 知道要更新而非新增
+    var payload = JSON.parse(JSON.stringify(record));
+    payload.upsert = true;
+    fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'application/json'}})
       .then(function(){ G.lastSyncTime=new Date(); updateSyncStatus(true); })
       .catch(function(){ updateSyncStatus(false,true); });
   }
@@ -1237,13 +1264,17 @@ function genAdvice(){
     '2. 若近期赤字/盈餘明顯，評估是否調整熱量目標（格式：GOAL_ADJUST:{train:數字,rest:數字,reason:"原因"}）\n'+
     '只需在需要調整時輸出GOAL_ADJUST，先給建議，最後才給GOAL_ADJUST。';
 
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
+  if(!GEMINI_API_KEY){ el.textContent='⚠️ 請先在設定頁填入 Gemini API Key'; return; }
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       contents: [{parts: [{text: prompt}]}],
+      generationConfig: {temperature: 0.3}
     })
-  }).then(function(r){return r.json();}).then(function(d){
+  })
+  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(function(d){
     var text=d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '無法生成建議';
     var gaMatch = text.match(/GOAL_ADJUST:\s*(\{[^}]+\})/);
     if(gaMatch){
