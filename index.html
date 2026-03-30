@@ -1397,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', function(){
   el('btn-adopt-goal')    && el('btn-adopt-goal').addEventListener('click', adoptGoalAdjust);
   el('btn-dismiss-goal')  && el('btn-dismiss-goal').addEventListener('click', dismissGoalAdjust);
 
-  // Key setup page save button
+  // 設定頁「儲存金鑰」按鈕（與 modal 內的按鈕獨立）
   el('btn-save-keys') && el('btn-save-keys').addEventListener('click', saveKeys);
 
   // Pre-fill key fields in settings page
@@ -1442,39 +1442,77 @@ function showKeySetup(){
   if(document.getElementById('key-modal')) return;
   var div = document.createElement('div');
   div.id = 'key-modal';
-  div.style.cssText = 'position:fixed;inset:0;background:rgba(15,45,94,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(15,45,94,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   div.innerHTML =
-    '<div style="background:#fff;border-radius:18px;padding:24px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(15,45,94,.2)">' +
+    '<div style="background:#fff;border-radius:18px;padding:24px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(15,45,94,.25)">' +
       '<div style="font-size:22px;margin-bottom:4px">🔑</div>' +
       '<div style="font-size:16px;font-weight:700;color:#0f2d5e;margin-bottom:4px">初次設定</div>' +
       '<div style="font-size:12px;color:#8a9abb;margin-bottom:18px">Key 只存在你的手機，不會上傳到任何地方</div>' +
-      '<div style="font-size:11px;font-weight:700;color:#4a5f80;margin-bottom:4px">Gemini API Key</div>' +
-      '<input id="setup-gemini" type="password" placeholder="AIzaSy..." style="width:100%;border:1.5px solid #dde3ef;border-radius:9px;padding:10px 12px;font-family:monospace;font-size:13px;outline:none;margin-bottom:12px">' +
-      '<div style="font-size:11px;font-weight:700;color:#4a5f80;margin-bottom:4px">Google Sheets Web App URL</div>' +
-      '<input id="setup-gas" type="text" placeholder="https://script.google.com/..." style="width:100%;border:1.5px solid #dde3ef;border-radius:9px;padding:10px 12px;font-family:monospace;font-size:12px;outline:none;margin-bottom:18px">' +
-      '<button id="btn-save-keys" style="width:100%;background:#1e4fa0;color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">儲存並開始使用</button>' +
+      '<div style="font-size:11px;font-weight:700;color:#4a5f80;margin-bottom:4px">Gemini API Key <span style="color:#c0392b">*必填</span></div>' +
+      '<input id="setup-gemini" type="password" placeholder="AIzaSy..." autocomplete="off" ' +
+        'style="width:100%;border:1.5px solid #dde3ef;border-radius:9px;padding:10px 12px;font-family:monospace;font-size:13px;outline:none;margin-bottom:4px;box-sizing:border-box">' +
+      '<div id="key-modal-err" style="display:none;color:#c0392b;font-size:11px;margin-bottom:8px"></div>' +
+      '<div style="font-size:11px;font-weight:700;color:#4a5f80;margin-top:10px;margin-bottom:4px">Google Sheets Web App URL <span style="color:#8a9abb">（選填）</span></div>' +
+      '<input id="setup-gas" type="text" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" ' +
+        'style="width:100%;border:1.5px solid #dde3ef;border-radius:9px;padding:10px 12px;font-family:monospace;font-size:11px;outline:none;margin-bottom:18px;box-sizing:border-box">' +
+      '<button id="btn-modal-save" ' +
+        'style="width:100%;background:#1e4fa0;color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">' +
+        '儲存並開始使用</button>' +
       '<div style="font-size:11px;color:#8a9abb;text-align:center;margin-top:10px">之後可在「設定」頁面修改</div>' +
     '</div>';
   document.body.appendChild(div);
-  document.getElementById('btn-save-keys').addEventListener('click', saveKeys);
+
+  // 綁定 modal 專屬按鈕（與設定頁的 btn-save-keys 完全獨立）
+  document.getElementById('btn-modal-save').addEventListener('click', saveKeys);
+
+  // Enter 鍵也能送出
+  div.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') saveKeys();
+  });
 }
 
 function saveKeys(){
-  var g = (document.getElementById('setup-gemini')||{}).value ||
-          (document.getElementById('key-gemini-settings')||{}).value || '';
-  var s = (document.getElementById('setup-gas')||{}).value ||
-          (document.getElementById('key-gas-settings')||{}).value || '';
-  g = g.trim(); s = s.trim();
-  if(g){ localStorage.setItem('gemini_key', g); GEMINI_API_KEY = g; }
-  if(s){ localStorage.setItem('sheets_url', s); GAS_URL = s; }
+  // 依序從 modal 輸入框、設定頁輸入框讀取（哪個有值用哪個）
+  var gEl = document.getElementById('setup-gemini') || document.getElementById('key-gemini-settings');
+  var sEl = document.getElementById('setup-gas')    || document.getElementById('key-gas-settings');
+  var g   = gEl ? gEl.value.trim() : '';
+  var s   = sEl ? sEl.value.trim() : '';
+
+  if(!g){
+    // 在 modal 內顯示錯誤提示
+    var errEl = document.getElementById('key-modal-err');
+    if(errEl){ errEl.textContent = '請填入 Gemini API Key'; errEl.style.display='block'; }
+    else toast('請填入 Gemini API Key');
+    return;
+  }
+
+  // 儲存到 localStorage 並更新全域變數
+  localStorage.setItem('gemini_key', g);
+  GEMINI_API_KEY = g;
+  if(s){
+    localStorage.setItem('sheets_url', s);
+    GAS_URL = s;
+  }
+
+  // 同步更新設定頁欄位
+  var kg = document.getElementById('key-gemini-settings');
+  var ks2 = document.getElementById('key-gas-settings');
+  if(kg)  kg.value  = g;
+  if(ks2) ks2.value = s;
+
+  // 關閉 modal
   var modal = document.getElementById('key-modal');
   if(modal) modal.remove();
-  if(g||s) toast('✓ 設定已儲存');
-  else toast('請至少填入 Gemini API Key');
-  // Update status display
-  var ks = document.getElementById('key-status');
-  if(ks) ks.innerHTML = (g?'<span style="color:#00875a">✓ Gemini Key 已設定</span>':'<span style="color:#c0392b">✗ 尚未設定 Gemini Key</span>') + 
-    (s?' &nbsp; <span style="color:#00875a">✓ Sheets URL 已設定</span>':'');
+
+  // 更新設定頁狀態
+  var statusEl = document.getElementById('key-status');
+  if(statusEl){
+    statusEl.innerHTML =
+      '<span style="color:#00875a">✓ Gemini Key 已設定</span>' +
+      (s ? ' &nbsp;<span style="color:#00875a">✓ Sheets URL 已設定</span>' : '');
+  }
+
+  toast('✓ 設定已儲存，開始使用吧！');
 }
 
 // ── PWA Hints ──
