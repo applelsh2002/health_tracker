@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<!-- 加入 maximum-scale=1.0 防止手機點擊輸入框時畫面放大 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>健康追蹤</title>
+
+<!-- Web App 專屬 Meta Tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="健康追蹤">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e4fa0">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMWU0ZmEwIi8+PHRleHQgeD0iOTAiIHk9IjExMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuW9k+W7qjwvdGV4dD48L3N2Zz4=">
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fb;--w:#fff;--b1:#dde3ef;
+  --nv:#0f2d5e;--nv2:#1a3f7a;--nv3:#1e4fa0;
+  --bl:#e8f0fd;--bl2:#dce9fd;
+  --gn:#00875a;--gnb:#e6f5f0;
+  --rd:#c0392b;--rdb:#fdf0ee;
+  --am:#b45309;--amb:#fef3cd;
+  --t2:#4a5f80;--t3:#8a9abb;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-style:normal!important;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--nv);font-family:'Noto Sans TC',sans-serif;font-size:15px;padding-bottom:80px;}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--w);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:99;box-shadow:0 1px 6px rgba(15,45,94,.07);}
+.logo{display:flex;align-items:center;gap:6px;font-family:'Noto Sans TC',sans-serif;font-size:17px;font-weight:700;color:var(--nv);}
+.logo span{font-size:11px;color:var(--t3);font-weight:500;}
+.dbg{font-family:Arial,sans-serif;font-size:11px;color:var(--nv2);background:var(--bl);border:1px solid #c5d6f5;padding:5px 11px;border-radius:999px;font-weight:600;}
+
+.main{max-width:660px;margin:0 auto;padding:14px 12px;}
+
+.card{background:var(--w);border:1px solid var(--b1);border-radius:var(--r);padding:16px;margin-bottom:11px;box-shadow:0 2px 8px rgba(15,45,94,.05);}
+.ct{font-size:10px;font-family:Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:12px;font-weight:600;}
+
+.sync-bar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3);margin-bottom:11px;font-family:Arial,sans-serif;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--t3);flex-shrink:0;}
+.sync-dot.ok{background:var(--gn);}
+.sync-dot.syncing{background:var(--am);animation:pulse 1s infinite;}
+.sync-btn{background:none;border:1px solid var(--b1);border-radius:6px;padding:2px 6px;font-size:10px;color:var(--t2);cursor:pointer;margin-left:auto;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* DAY TOGGLE */
+.dtog{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dbtn{padding:13px 10px;border-radius:11px;border:2px solid var(--b1);background:#f8f9fc;color:var(--t2);font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;width:100%;}
+.dbtn em{font-size:18px;}
+.dbtn.atr{border-color:var(--nv3);background:var(--bl);color:var(--nv3);}
+.dbtn.are{border-color:#7c5cbf;background:#f3f0fa;color:#7c5cbf;}
+
+/* WEIGHT */
+.wrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.wf label{display:block;font-size:11px;font-weight:600;color:var(--t2);margin-bottom:5px;}
+.wf input{width:100%;background:#f8f9fc;border:1.5px solid var(--b1);border-radius:9px;padding:10px;color:var(--nv);font-family:Arial,sans-serif;font-size:22px;font-weight:600;text-align:center;outline:none;transition:border-color .2s;}
+.wf input:focus{border-color:var(--nv3);}
+.wu{font-size:10px;color:var(--t3);text-align:center;margin-top:3px;}
+.wdelta{text-align:center;margin-top:8px;font-family:Arial,sans-serif;font-size:12px;color:var(--t2);min-height:16px;font-weight:500;}
+
+/* ─── MEAL SECTION ─── */
+.meal-list{display:flex;flex-direction:column;gap:10px;}
+.meal-block{background:#f8f9fc;border:1.5px solid var(--b1);border-radius:11px;padding:12px;}
+.meal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.meal-title{font-size:14px;font-weight:700;color:var(--nv);display:flex;align-items:center;flex-wrap:wrap;}
+.meal-kcal{font-family:Arial,sans-serif;font-size:12px;color:var(--t3);font-weight:600;}
+.meal-items{display:flex;flex-direction:column;gap:6px;min-height:28px;margin-bottom:8px;}
+
+/* 新版：計算項目列設計 */
+.food-row{display:flex;align-items:center;justify-content:space-between;background:var(--w);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;}
+.fr-left{display:flex;flex-direction:column;gap:2px;flex:1;}
+.fr-name{font-size:13px;font-weight:600;color:var(--nv);}
+.fr-loading{font-size:11px;color:var(--am);display:flex;align-items:center;gap:4px;font-weight:500;}
+.fr-note{font-size:10px;color:var(--t3);}
+.fr-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:12px;}
+.fr-kcal{font-size:13px;font-weight:700;color:var(--nv);font-family:Arial,sans-serif;}
+.fr-pcf{font-size:10px;color:var(--t3);font-family:Arial,sans-serif;font-weight:500;}
+.fr-rm{background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:4px;line-height:1;}
+.fr-rm:hover{color:var(--rd);}
+
+.meal-add-row{display:flex;gap:6px;margin-top:9px;align-items:center;flex-wrap:wrap;}
+.meal-text-input{flex:1;min-width:120px;background:var(--w);border:1.5px solid var(--b1);border-radius:8px;padding:8px 10px;color:var(--nv);font-size:13px;outline:none;font-family:'Noto Sans TC',sans-serif;}
+.meal-text-input:focus{border-color:var(--nv3);}
+.meal-add-btn{background:var(--nv3);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;}
+.meal-add-btn:active{background:var(--nv2);}
+.quick-foods{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.qf{padding:5px 11px;border-radius:999px;border:1.5px solid var(--b1);background:var(--w);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .12s;}
+.qf:active{border-color:var(--nv3);color:var(--nv3);background:var(--bl);}
+.add-meal-btn{display:flex;align-items:center;gap:6px;width:100%;padding:10px;border:2px dashed var(--b1);border-radius:10px;background:none;color:var(--t3);font-size:13px;font-weight:600;cursor:pointer;justify-content:center;margin-top:6px;font-family:'Noto Sans TC',sans-serif;}
+.add-meal-btn:active{border-color:var(--nv3);color:var(--nv3);background:#f8f9fc;}
+
+/* CALORIE & MACRO SUMMARY */
+.cal-summary{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bl);border-radius:10px;border:1px solid #c5d6f5;}
+.cal-sum-num{font-family:'Playfair Display',serif;font-size:24px;color:var(--nv);}
+.cal-sum-label{font-size:11px;color:var(--t3);margin-top:1px;font-weight:500;}
+.cal-sum-target{font-size:12px;color:var(--t2);font-weight:600;}
+.macro-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;}
+.macro-box{background:#f8f9fc;border:1px solid var(--b1);border-radius:8px;padding:10px;text-align:center;}
+.macro-val{font-family:Arial,sans-serif;font-size:15px;font-weight:700;color:var(--nv);}
+.macro-lbl{font-size:11px;color:var(--t3);margin-top:2px;font-weight:500;}
+.macro-tgt{font-size:10px;color:var(--t3);font-family:Arial,sans-serif;margin-top:2px;}
+
+.cal-bar-wrap{background:#dde3ef;border-radius:999px;height:5px;overflow:hidden;margin-top:10px;}
+.cal-bar{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--nv3),#4a90e2);transition:width .5s ease;}
+.cal-bar.over{background:linear-gradient(90deg,var(--am),var(--rd));}
+
+/* AI FOOD INPUT */
+.ai-input-area{border:2px solid var(--b1);border-radius:10px;overflow:hidden;margin-top:8px;}
+.ai-tabs{display:flex;border-bottom:1px solid var(--b1);}
+.ai-tab{flex:1;padding:10px;background:#f8f9fc;border:none;font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s;}
+.ai-tab.act{background:var(--w);color:var(--nv3);border-bottom:2px solid var(--nv3);}
+.ai-panel{padding:12px;display:none;}
+.ai-panel.act{display:block;}
+.ai-text-row{display:flex;gap:8px;}
+.ai-text-row textarea{flex:1;border:1.5px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--nv);outline:none;resize:none;font-family:'Noto Sans TC',sans-serif;background:#f8f9fc;}
+.ai-text-row textarea:focus{border-color:var(--nv3);}
+.ai-go-btn{align-self:flex-end;background:var(--nv3);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.ai-go-btn:active{background:var(--nv2);}
+.scan-zone{border:2px dashed #c5d6f5;border-radius:9px;padding:18px;text-align:center;background:var(--bl);cursor:pointer;position:relative;}
+.scan-zone label{position:absolute;inset:0;cursor:pointer;}
+.scan-zone label input{position:absolute;width:1px;height:1px;opacity:0;}
+.scan-zone .si{font-size:24px;margin-bottom:4px;}
+.scan-zone .slb{font-size:13px;font-weight:700;color:var(--nv2);}
+.scan-zone .ssb{font-size:11px;color:var(--t3);margin-top:2px;}
+#air{margin-top:10px;background:#f8f9fc;border-radius:9px;padding:12px;font-size:13px;line-height:1.8;color:var(--nv);display:none;border:1px solid var(--b1);}
+#air.show{display:block;}
+.ai-result-apply{display:none;margin-top:8px;width:100%;padding:10px;background:var(--gn);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.ai-result-apply.show{display:block;}
+
+/* ACTIVITY (auto sync) */
+.act-sync-status{display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fc;border:1px solid var(--b1);border-radius:10px;margin-bottom:12px;}
+.act-sync-icon{font-size:22px;}
+.act-sync-info{flex:1;}
+.act-sync-title{font-size:14px;font-weight:600;color:var(--nv);}
+.act-sync-sub{font-size:11px;color:var(--t3);font-family:Arial,sans-serif;margin-top:2px;}
+.act-sync-badge{font-size:10px;padding:3px 8px;border-radius:999px;background:var(--gnb);color:var(--gn);font-weight:700;}
+.act-sync-badge.pending{background:var(--amb);color:var(--am);}
+.act-data-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.act-data-box{background:#f8f9fc;border:1px solid var(--b1);border-radius:9px;padding:12px;text-align:center;}
+.act-data-box .adv{font-family:Arial,sans-serif;font-size:22px;color:var(--nv);font-weight:700;}
+.act-data-box .adl{font-size:10px;color:var(--t3);margin-top:3px;}
+.act-manual-toggle{background:none;border:none;font-size:12px;color:var(--t3);cursor:pointer;padding:0;font-family:'Noto Sans TC',sans-serif;margin-top:8px;font-weight:600;}
+.act-manual-section{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--b1);}
+.act-manual-section.open{display:block;}
+.act-list{display:grid;gap:8px;}
+.act-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;background:#f8f9fc;border:1px solid var(--b1);border-radius:10px;padding:10px 12px;}
+.act-icon{font-size:20px;}
+.act-name{font-size:14px;font-weight:600;color:var(--nv);}
+.act-sub{font-size:11px;color:var(--t3);font-family:Arial,sans-serif;}
+.act-dur input{width:65px;background:var(--w);border:1.5px solid var(--b1);border-radius:7px;padding:6px;color:var(--nv);font-family:Arial,sans-serif;font-size:14px;font-weight:600;text-align:center;outline:none;}
+.act-dur input:focus{border-color:var(--nv3);}
+.act-rm{background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;padding:0 4px;}
+.add-act-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.act-preset{padding:8px 14px;border-radius:999px;border:1.5px solid var(--b1);background:var(--w);color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s;}
+.act-preset:active{border-color:var(--nv3);color:var(--nv3);background:var(--bl);}
+
+/* SUMMARY */
+.def-big{text-align:center;padding:10px 0 16px;}
+.def-num{font-family:'Playfair Display',serif;font-size:48px;color:var(--nv);}
+.def-unit{font-size:13px;color:var(--t3);font-weight:500;margin-top:2px;}
+.def-sub{font-size:13px;color:var(--t2);margin-top:8px;}
+.cbw{background:#edf0f7;border-radius:999px;height:6px;overflow:hidden;margin:12px 0;border:1px solid var(--b1);}
+.cb{height:100%;border-radius:999px;transition:width .7s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,var(--nv3),#4a90e2);}
+.cb.over{background:linear-gradient(90deg,var(--am),var(--rd));}
+.cbl{display:flex;justify-content:space-between;font-size:11px;color:var(--t3);font-weight:500;}
+
+#wt-chart-wrap{position:relative;width:100%;height:180px;margin-top:6px;}
+canvas#wtc{width:100%;height:180px;}
+.chart-empty{text-align:center;padding:50px 0;font-size:13px;color:var(--t3);}
+
+.sr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--b1);}
+.sr:last-child{border-bottom:none;}
+.sl{color:var(--t2);font-size:13px;font-weight:600;}
+.sv{font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:var(--nv);}
+.vg{color:var(--gn)!important;}.vr{color:var(--rd)!important;}.va{color:var(--am)!important;}
+
+/* AI ADJUST GOAL */
+.goal-adjust-box{background:var(--gnb);border:1px solid #a3d9c4;border-radius:10px;padding:14px;margin-top:12px;font-size:13px;line-height:1.8;color:var(--nv);display:none;}
+.goal-adjust-box.show{display:block;}
+.goal-adjust-actions{display:flex;gap:8px;margin-top:10px;}
+.btn-adopt{background:var(--gn);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.btn-dismiss{background:none;border:1.5px solid var(--b1);color:var(--t2);border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+
+/* HISTORY TABLE */
+.ht{width:100%;border-collapse:collapse;font-size:12px;}
+.ht th{font-size:10px;letter-spacing:1px;color:var(--t3);text-align:left;padding:8px;border-bottom:1.5px solid var(--b1);text-transform:uppercase;}
+.ht td{padding:10px 8px;border-bottom:1px solid var(--b1);color:var(--t2);font-family:Arial,sans-serif;}
+.ht tr:last-child td{border-bottom:none;}
+.bg{font-size:10px;padding:3px 8px;border-radius:999px;font-family:'Noto Sans TC',sans-serif;font-weight:700;}
+.bgt{background:var(--bl);color:var(--nv3);}
+.bgr{background:#f3f0fa;color:#7c5cbf;}
+
+/* SETTINGS */
+.sinput{width:100%;background:#f8f9fc;border:1.5px solid var(--b1);border-radius:9px;padding:10px 14px;color:var(--nv);font-family:Arial,sans-serif;font-size:13px;font-weight:500;outline:none;margin-top:4px;transition:border-color .2s;}
+.sinput:focus{border-color:var(--nv3);}
+.goal-macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.goal-macro-grid label{font-size:11px;color:var(--t3);font-weight:500;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 18px;border-radius:9px;border:none;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:700;transition:all .14s;appearance:none;-webkit-appearance:none;}
+.bp{background:var(--nv3);color:#fff;box-shadow:0 2px 6px rgba(30,79,160,.28);}
+.bp:active{background:var(--nv2);transform:scale(.97);}
+.bg2{background:#f8f9fc;color:var(--t2);border:1.5px solid var(--b1);}
+.bg2:active{border-color:var(--nv3);color:var(--nv3);}
+.brow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+
+.page{display:none;}
+.page.active{display:block;}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--w);border-top:1.5px solid var(--b1);display:flex;justify-content:space-around;padding:6px 0 12px;z-index:99;box-shadow:0 -2px 8px rgba(15,45,94,.05);}
+.nb{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--t3);cursor:pointer;background:none;border:none;font-family:'Noto Sans TC',sans-serif;padding:6px 14px;border-radius:9px;}
+.nb .ni{font-size:20px;}
+.nb.act{color:var(--nv3);}
+
+#toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--nv);color:#fff;padding:10px 20px;border-radius:999px;font-size:12px;font-weight:700;opacity:0;transition:all .23s;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 3px 12px rgba(15,45,94,.22);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.sp{display:inline-block;width:14px;height:14px;border:2px solid rgba(30,79,160,.2);border-top-color:var(--nv3);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">健康追蹤 <span>減脂增肌</span></div>
+  <div class="dbg" id="dbg"></div>
+</div>
+
+<div class="main">
+
+  <!-- ──────────── TODAY ──────────── -->
+  <div class="page active" id="page-today">
+
+    <div class="sync-bar">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">尚未同步</span>
+      <button class="sync-btn" id="btn-manual-sync">手動同步</button>
+    </div>
+
+    <!-- Day type -->
+    <div class="card">
+      <div class="ct">今日狀態</div>
+      <div class="dtog">
+        <button class="dbtn atr" id="btn-train"><em>🏋️</em>訓練日</button>
+        <button class="dbtn" id="btn-rest"><em>🧘</em>休息日</button>
+      </div>
+    </div>
+
+    <!-- Weight -->
+    <div class="card">
+      <div class="ct">體重紀錄</div>
+      <div class="wrow">
+        <div class="wf">
+          <label>早上體重</label>
+          <input type="number" id="wm" placeholder="--.-" step="0.1">
+          <div class="wu">kg · 起床空腹</div>
+        </div>
+        <div class="wf">
+          <label>晚上體重</label>
+          <input type="number" id="we" placeholder="--.-" step="0.1">
+          <div class="wu">kg · 睡前</div>
+        </div>
+      </div>
+      <div class="wdelta" id="wdelta"></div>
+    </div>
+
+    <!-- Meal intake -->
+    <div class="card">
+      <div class="ct">飲食與營養攝入</div>
+      
+      <!-- Calorie summary bar -->
+      <div class="cal-summary" style="margin-bottom:14px;">
+        <div>
+          <div class="cal-sum-num" id="total-kcal-num">0</div>
+          <div class="cal-sum-label">kcal 今日已攝入</div>
+        </div>
+        <div style="text-align:right">
+          <div class="cal-sum-target" id="cal-target-label">目標 — kcal</div>
+          <div class="cal-sum-target" id="cal-delta-label" style="margin-top:2px"></div>
+        </div>
+      </div>
+      <div class="cal-bar-wrap"><div class="cal-bar" id="cal-bar" style="width:0%"></div></div>
+
+      <div class="macro-grid">
+        <div class="macro-box">
+          <div class="macro-val" id="total-p-num" style="color:#1e4fa0">0g</div>
+          <div class="macro-lbl">蛋白質</div>
+          <div class="macro-tgt" id="tgt-p">/ 0g</div>
+        </div>
+        <div class="macro-box">
+          <div class="macro-val" id="total-c-num" style="color:#b45309">0g</div>
+          <div class="macro-lbl">碳水</div>
+          <div class="macro-tgt" id="tgt-c">/ 0g</div>
+        </div>
+        <div class="macro-box">
+          <div class="macro-val" id="total-f-num" style="color:#b45380">0g</div>
+          <div class="macro-lbl">脂肪</div>
+          <div class="macro-tgt" id="tgt-f">/ 0g</div>
+        </div>
+      </div>
+
+      <div style="height:14px"></div>
+      <div class="meal-list" id="meal-list"></div>
+      <button class="add-meal-btn" id="add-meal-btn">＋ 新增一餐</button>
+
+      <!-- AI Food Input -->
+      <div style="margin-top:18px">
+        <div class="ct" style="margin-bottom:8px">AI 飲食辨識 (含營養素)</div>
+        <div class="ai-input-area">
+          <div class="ai-tabs">
+            <button class="ai-tab act" id="tab-text" >📝 文字描述</button>
+            <button class="ai-tab" id="tab-photo" >📸 拍照辨識</button>
+          </div>
+          <div class="ai-panel act" id="panel-text">
+            <div class="ai-text-row">
+              <textarea id="food-text-input" rows="2" placeholder="描述食物，如：超商美式咖啡M杯、雞胸肉150g、白飯一碗"></textarea>
+              <button class="ai-go-btn" id="btn-food-text-go">分析</button>
+            </div>
+          </div>
+          <div class="ai-panel" id="panel-photo">
+            <div class="scan-zone">
+              <label><input type="file" accept="image/*" id="fimg">
+                <div class="si">📸</div>
+                <div class="slb">上傳食物照片或營養標籤</div>
+                <div class="ssb">AI 自動辨識熱量與三大營養素</div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div id="air"></div>
+        <button class="ai-result-apply" id="ai-apply-btn" >✓ 加入當前餐次</button>
+      </div>
+    </div>
+
+    <!-- Activity (auto sync) -->
+    <div class="card">
+      <div class="ct">運動紀錄</div>
+
+      <!-- Sync status from Garmin/Apple Health -->
+      <div class="act-sync-status">
+        <div class="act-sync-icon">⌚</div>
+        <div class="act-sync-info">
+          <div class="act-sync-title">Garmin / Apple Health</div>
+          <div class="act-sync-sub" id="act-sync-sub">iOS 捷徑自動同步</div>
+        </div>
+        <div class="act-sync-badge pending" id="act-sync-badge">等待資料</div>
+      </div>
+
+      <!-- Auto data from Garmin/Health -->
+      <div class="act-data-grid">
+        <div class="act-data-box">
+          <div class="adv" id="act-active-cal">—</div>
+          <div class="adl">活動消耗 kcal</div>
+        </div>
+        <div class="act-data-box">
+          <div class="adv" id="act-total-cal">—</div>
+          <div class="adl">總消耗 kcal</div>
+        </div>
+        <div class="act-data-box">
+          <div class="adv" id="act-steps">—</div>
+          <div class="adl">步數</div>
+        </div>
+        <div class="act-data-box">
+          <div class="adv" id="act-hrv">—</div>
+          <div class="adl">HRV ms</div>
+        </div>
+      </div>
+
+      <!-- Manual activity supplement -->
+      <button class="act-manual-toggle" id="act-manual-toggle" >▶ 手動補充訓練項目</button>
+      <div class="act-manual-section" id="act-manual-section">
+        <div class="act-list" id="act-list"></div>
+        <div class="add-act-row" id="act-presets"></div>
+      </div>
+    </div>
+
+  </div><!-- /today -->
+
+  <!-- ──────────── SUMMARY ──────────── -->
+  <div class="page" id="page-summary">
+
+    <div class="card">
+      <div class="ct">今日熱量赤字</div>
+      <div class="def-big">
+        <div class="def-num" id="def-num">—</div>
+        <div class="def-unit">kcal 赤字</div>
+        <div class="def-sub" id="def-sub">需 Garmin 同步總消耗</div>
+      </div>
+      <div class="cbw"><div class="cb" id="cbar" style="width:0%"></div></div>
+      <div class="cbl"><span>攝入</span><span id="cbarlb">—</span><span>消耗</span></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">今日總覽</div>
+      <div class="sr"><span class="sl">今日狀態</span><span class="sv" id="s-dt">—</span></div>
+      <div class="sr"><span class="sl">體重 早→晚</span><span class="sv" id="s-wt">—</span></div>
+      <div class="sr"><span class="sl">熱量攝入</span><span class="sv" id="s-in">—</span></div>
+      <div class="sr"><span class="sl">蛋白質</span><span class="sv" id="s-p" style="color:#1e4fa0">—</span></div>
+      <div class="sr"><span class="sl">碳水化合物</span><span class="sv" id="s-c" style="color:#b45309">—</span></div>
+      <div class="sr"><span class="sl">脂肪</span><span class="sv" id="s-f" style="color:#b45380">—</span></div>
+      <div class="sr"><span class="sl">各餐熱量</span><span class="sv" id="s-meals" style="font-weight:400;font-size:12px">—</span></div>
+      <div class="sr"><span class="sl">Garmin 總消耗</span><span class="sv" id="s-gc">—</span></div>
+      <div class="sr"><span class="sl">訓練補充</span><span class="sv" id="s-act">—</span></div>
+    </div>
+
+    <!-- AI advice -->
+    <div class="card">
+      <div class="ct">AI 智慧建議 · 目標調整</div>
+      <div id="adv" style="font-size:13px;line-height:1.9;color:var(--t2);white-space:pre-line">點擊按鈕，AI 根據今日數據產出個人化建議，並評估是否需要調整熱量目標</div>
+      <div class="brow"><button class="btn bp" id="btn-adv">✨ 生成 AI 建議</button></div>
+      <div class="goal-adjust-box" id="goal-adjust-box">
+        <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:8px">📊 AI 建議目標調整</div>
+        <div id="goal-adjust-detail" style="font-size:13px;color:var(--t2)"></div>
+        <div class="goal-adjust-actions">
+          <button class="btn-adopt" id="btn-adopt-goal">套用建議</button>
+          <button class="btn-dismiss" id="btn-dismiss-goal">保持現在</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /summary -->
+
+  <!-- ──────────── CHART ──────────── -->
+  <div class="page" id="page-chart">
+    <div class="card">
+      <div class="ct">體重變化曲線</div>
+      <div id="wt-chart-wrap"><canvas id="wtc"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">近期數據</div>
+      <div style="overflow-x:auto">
+        <table class="ht">
+          <thead><tr><th>日期</th><th>狀態</th><th>早體重</th><th>攝入</th><th>赤字</th></tr></thead>
+          <tbody id="hbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /chart -->
+
+  <!-- ──────────── SETTINGS ──────────── -->
+  <div class="page" id="page-settings">
+
+    <!-- KEY MANAGEMENT CARD -->
+    <div class="card">
+      <div class="ct">API 金鑰設定</div>
+      <div style="font-size:11px;color:#8a9abb;margin-bottom:12px;padding:9px 12px;background:#f0f3f8;border-radius:8px;line-height:1.7">
+        🔒 Key 僅存於本機瀏覽器 localStorage，<strong>不會上傳</strong>到任何伺服器
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#4a5f80;margin-bottom:4px">Gemini API Key</div>
+      <input id="key-gemini-settings" type="password" class="sinput" style="margin-top:0"
+        placeholder="AIzaSy..." value="">
+      <div style="font-size:11px;font-weight:700;color:#4a5f80;margin-top:10px;margin-bottom:4px">Google Sheets Web App URL</div>
+      <input id="key-gas-settings" type="text" class="sinput" style="margin-top:0"
+        placeholder="https://script.google.com/macros/s/.../exec" value="">
+      <div class="brow">
+        <button class="btn bp" id="btn-save-keys">💾 儲存金鑰</button>
+        <button class="btn bg2" id="btn-clear-keys">🗑 清除金鑰</button>
+      </div>
+      <div id="key-status" style="margin-top:8px;font-size:11px;color:#8a9abb"></div>
+    </div>
+
+
+    <div class="card">
+      <div class="ct">營養目標設定</div>
+      
+      <div style="font-size:12px;font-weight:700;color:var(--nv2);margin-bottom:10px">🏋️ 訓練日</div>
+      <div class="goal-macro-grid">
+        <div><label>熱量 (kcal)</label><input type="number" class="sinput" id="goal-k-train"></div>
+        <div><label>蛋白質 (g)</label><input type="number" class="sinput" id="goal-p-train"></div>
+        <div><label>碳水 (g)</label><input type="number" class="sinput" id="goal-c-train"></div>
+        <div><label>脂肪 (g)</label><input type="number" class="sinput" id="goal-f-train"></div>
+      </div>
+      
+      <div style="height:1px;background:var(--b1);margin:16px 0;"></div>
+
+      <div style="font-size:12px;font-weight:700;color:var(--nv2);margin-bottom:10px">🧘 休息日</div>
+      <div class="goal-macro-grid">
+        <div><label>熱量 (kcal)</label><input type="number" class="sinput" id="goal-k-rest"></div>
+        <div><label>蛋白質 (g)</label><input type="number" class="sinput" id="goal-p-rest"></div>
+        <div><label>碳水 (g)</label><input type="number" class="sinput" id="goal-c-rest"></div>
+        <div><label>脂肪 (g)</label><input type="number" class="sinput" id="goal-f-rest"></div>
+      </div>
+
+      <div class="brow" style="margin-top:18px;">
+        <button class="btn bp" id="btn-save-goals">儲存目標</button>
+        <button class="btn bg2" id="btn-reset-goals">還原預設</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">快捷食物列表</div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.7">常用食物快捷選項（每行一個名稱即可，點擊後自動代入輸入框）</div>
+      <textarea class="sinput" id="quick-foods-edit" rows="8" style="font-size:13px;line-height:1.8;resize:vertical" placeholder="雞胸肉&#10;白飯&#10;地瓜&#10;全蛋&#10;燕麥"></textarea>
+      <div class="brow"><button class="btn bp" id="btn-save-qf">儲存快捷食物</button></div>
+    </div>
+
+  </div><!-- /settings -->
+
+</div><!-- /main -->
+
+<div class="bnav">
+  <button class="nb act" id="nb-today"><span class="ni">📝</span>今日</button>
+  <button class="nb" id="nb-summary"><span class="ni">📊</span>摘要</button>
+  <button class="nb" id="nb-chart"><span class="ni">📈</span>趨勢</button>
+  <button class="nb" id="nb-settings"><span class="ni">⚙️</span>設定</button>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════
+// ── API Keys 從 localStorage 讀取（不寫死在程式碼中）──
+var GEMINI_API_KEY = localStorage.getItem('gemini_key') || '';
+var GAS_URL        = localStorage.getItem('sheets_url') || '';
+var AUTO_SAVE_INTERVAL = 30000;
+
+// Default MACRO goals (training/rest) -> { kcal, protein, carbs, fat }
+var DEF_MACRO_GOALS = { 
+  train: { k: 1600, p: 125, c: 140, f: 55 }, 
+  rest:  { k: 1450, p: 125, c: 120, f: 55 } 
+};
+
+// Original Menu Hints per meal
+var MENU_HINTS = {
+  train: [
+    '雞胸肉100g, 全蛋2顆, 水果150g, 油6g',
+    '肉/海鮮130g, 雞胸65g, 白飯175g, 熟菜225g, 油14g',
+    '肉/海鮮130g, 雞胸65g, 白飯175g, 熟菜225g, 油14g'
+  ],
+  rest: [
+    '雞胸肉100g, 全蛋2顆, 水果100g, 油6g',
+    '肉/海鮮130g, 雞胸65g, 白飯150g, 熟菜225g, 油14g',
+    '肉/海鮮130g, 雞胸65g, 白飯150g, 熟菜225g, 油14g'
+  ]
+};
+
+// Default quick foods [name]
+var DEF_QUICK_FOODS = [
+  '雞胸肉', '白飯', '低脂牛肉', '全蛋', '地瓜',
+  '花椰菜', '鮭魚', '燕麥', '香蕉', '高蛋白粉'
+];
+
+var ACTIVITY_PRESETS = [
+  {id:'weight',name:'重訓',icon:'🏋️',calPerMin:6},
+  {id:'run',name:'跑步',icon:'🏃',calPerMin:10},
+  {id:'bike',name:'騎車',icon:'🚴',calPerMin:8},
+  {id:'swim',name:'游泳',icon:'🏊',calPerMin:9},
+  {id:'hiit',name:'HIIT',icon:'⚡',calPerMin:12},
+  {id:'walk',name:'健走',icon:'🚶',calPerMin:4}
+];
+
+// ════════════════════════════════════
+// STATE
+// ════════════════════════════════════
+var G = {
+  dayType: 'train',
+  macroGoals: loadItem('macro_goals', DEF_MACRO_GOALS),
+  meals: [],        // [{id, name, foods:[{name,kcal,p,c,f,note,isLoading}]}]
+  activities: [],
+  garmin: {},       // {active,total,steps,hrv}
+  wtChart: null,
+  autoSaveTimer: null,
+  lastSyncTime: null,
+  pendingAiResult: null,
+  pendingGoalAdjust: null,
+  _deferredInstall: null
+};
+
+// ════════════════════════════════════
+// STORAGE
+// ════════════════════════════════════
+function loadItem(key, def){
+  try{ var v=JSON.parse(localStorage.getItem(key)); return (v!==null&&v!==undefined)?v:def; }
+  catch(e){ return def; }
+}
+function saveItem(key,val){ localStorage.setItem(key,JSON.stringify(val)); }
+
+// 取得台灣時間的 YYYY-MM-DD
+function todayStr(){ 
+  var d = new Date();
+  var tzOffset = d.getTimezoneOffset() * 60000; // offset in milliseconds
+  return new Date(d.getTime() - tzOffset).toISOString().split('T')[0]; 
+}
+function todayKey(){ return 'day_'+todayStr(); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+function loadQuickFoods(){
+  var raw = loadItem('quick_foods_raw', null);
+  if(raw) return raw;
+  return DEF_QUICK_FOODS;
+}
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+function init(){
+  document.getElementById('dbg').textContent =
+    new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric',weekday:'short'});
+
+  ['today','summary','chart','settings'].forEach(function(p){
+    document.getElementById('nb-'+p).addEventListener('click',function(){ showPage(p); });
+  });
+
+  document.getElementById('btn-train').addEventListener('click',function(){ setDayType('train'); });
+  document.getElementById('btn-rest').addEventListener('click',function(){ setDayType('rest'); });
+
+  document.getElementById('wm').addEventListener('input', function(){ calcWeightDelta(); scheduleAutoSave(); });
+  document.getElementById('we').addEventListener('input', function(){ calcWeightDelta(); scheduleAutoSave(); });
+
+  document.getElementById('add-meal-btn').addEventListener('click', addMeal);
+  document.getElementById('fimg').addEventListener('change', function(){ analyzeFoodPhoto(this); });
+  document.getElementById('btn-adv').addEventListener('click', genAdvice);
+
+  document.getElementById('btn-save-goals').addEventListener('click', saveMacroGoals);
+  document.getElementById('btn-reset-goals').addEventListener('click', resetMacroGoals);
+  document.getElementById('btn-save-qf').addEventListener('click', saveQuickFoods);
+
+  renderActivityPresets();
+  loadTodayFromStorage();
+  renderMacroGoalInputs();
+  renderQuickFoodsEditor();
+  updateSyncStatus();
+  updateDashboardUI();
+
+  setInterval(bgSave, AUTO_SAVE_INTERVAL);
+}
+
+// ════════════════════════════════════
+// NAV
+// ════════════════════════════════════
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('act'); });
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nb-'+name).classList.add('act');
+  if(name==='summary') updateSummary();
+  if(name==='chart'){ renderHistory(); renderCharts(); }
+}
+
+// ════════════════════════════════════
+// DAY TYPE & WEIGHT
+// ════════════════════════════════════
+function setDayType(type){
+  G.dayType = type;
+  document.getElementById('btn-train').className='dbtn'+(type==='train'?' atr':'');
+  document.getElementById('btn-rest').className='dbtn'+(type==='rest'?' are':'');
+  updateDashboardUI();
+  renderMeals(); 
+  scheduleAutoSave();
+}
+
+function calcWeightDelta(){
+  var m=parseFloat(document.getElementById('wm').value);
+  var e=parseFloat(document.getElementById('we').value);
+  var el=document.getElementById('wdelta');
+  if(m&&e){
+    var d=(e-m).toFixed(1);
+    el.innerHTML='日內變化：<span style="color:'+(d>0?'var(--rd)':'var(--gn)')+'">'+(d>0?'+':'')+d+' kg</span>';
+  } else el.innerHTML='';
+}
+
+function prefillYesterdayWeight(){
+  var wmEl = document.getElementById('wm');
+  if(wmEl.value) return;
+  var hist = loadItem('history',[]);
+  if(hist.length>0&&hist[0].weight&&hist[0].weight.morning){
+    wmEl.value = hist[0].weight.morning;
+    wmEl.style.color='var(--t3)';
+    wmEl.addEventListener('input',function(){ this.style.color='var(--nv)'; },{once:true});
+  }
+}
+
+// ════════════════════════════════════
+// MEAL MANAGEMENT
+// ════════════════════════════════════
+var mealCounter = 0;
+function addMeal(){
+  mealCounter++;
+  var id = 'meal_'+Date.now();
+  var num = G.meals.length+1;
+  G.meals.push({id:id, name:'第'+num+'餐', foods:[]});
+  renderMeals();
+  scheduleAutoSave();
+}
+
+function removeMeal(id){
+  G.meals = G.meals.filter(function(m){ return m.id!==id; });
+  G.meals.forEach(function(m,i){ m.name='第'+(i+1)+'餐'; });
+  renderMeals();
+  updateDashboardUI();
+  scheduleAutoSave();
+}
+
+function addFoodToMeal(mealId, foodName, kcal, p, c, f, isLoading, note){
+  var meal = G.meals.find(function(m){ return m.id===mealId; });
+  if(!meal) return;
+  meal.foods.push({name:foodName, kcal:kcal||0, p:p||0, c:c||0, f:f||0, isLoading:isLoading||false, note:note||''});
+  renderMeals();
+  updateDashboardUI();
+  scheduleAutoSave();
+}
+
+function removeFoodFromMeal(mealId, foodIdx){
+  var meal = G.meals.find(function(m){ return m.id===mealId; });
+  if(!meal) return;
+  meal.foods.splice(foodIdx,1);
+  renderMeals();
+  updateDashboardUI();
+  scheduleAutoSave();
+}
+
+function renderMeals(){
+  var container = document.getElementById('meal-list');
+  if(!G.meals.length){
+    container.innerHTML='<div style="font-size:12px;color:var(--t3);text-align:center;padding:12px">點「新增一餐」開始紀錄</div>';
+    return;
+  }
+  
+  container.innerHTML = G.meals.map(function(meal, mi){
+    var mealKcal = meal.foods.reduce(function(s,f){ return s+(f.kcal||0); },0);
+    
+    // 原菜單提示
+    var hint = MENU_HINTS[G.dayType][mi];
+    var hintHtml = hint ? '<div style="font-size:11px;color:var(--nv3);background:var(--bl);padding:5px 9px;border-radius:6px;display:inline-block;font-weight:600;">📍原菜單：' + hint + '</div>' : '';
+
+    // AI 微調建議 (依據前幾餐的攝取量給予當下調整)
+    var suggestHtml = '';
+    if (mi > 0 && hint) {
+        var tg = G.macroGoals[G.dayType];
+        var soFar = {p:0, c:0, f:0};
+        for(var j=0; j<mi; j++){
+            G.meals[j].foods.forEach(function(f){ soFar.p+=(f.p||0); soFar.c+=(f.c||0); soFar.f+=(f.f||0); });
+        }
+        var remP = tg.p - soFar.p;
+        var remC = tg.c - soFar.c;
+        var remF = tg.f - soFar.f;
+        var msgs = [];
+        
+        if (remC < 40) msgs.push('碳水偏少(剩'+remC+'g)，建議白飯減半');
+        if (remP > 70) msgs.push('蛋白質落後(差'+remP+'g)，建議增加肉量');
+        if (remF < 10) msgs.push('脂肪將滿，建議避開油脂');
+
+        if (msgs.length > 0) {
+            suggestHtml = '<div style="font-size:11px;color:var(--am);margin-top:6px;background:var(--amb);padding:5px 9px;border-radius:6px;display:inline-block;font-weight:600;">💡 修正建議：' + msgs[0] + '</div>';
+        }
+    }
+    
+    var mealHeaderInfo = '<div style="margin-bottom:10px;">' + hintHtml + '<br>' + suggestHtml + '</div>';
+
+    // 食物資料列
+    var foodRowsHtml = meal.foods.length
+      ? meal.foods.map(function(f,fi){
+          if(f.isLoading) {
+            return '<div class="food-row"><div class="fr-left"><span class="fr-name">'+f.name+'</span><span class="fr-loading"><span class="sp"></span> AI 計算中...</span></div><button class="fr-rm" data-mid="'+meal.id+'" data-fi="'+fi+'">×</button></div>';
+          } else {
+            var noteHtml = f.note ? '<span class="fr-note">'+f.note+'</span>' : '';
+            return '<div class="food-row"><div class="fr-left"><span class="fr-name">'+f.name+'</span>'+noteHtml+'</div><div class="fr-right"><span class="fr-kcal">'+(f.kcal||0)+' kcal</span><span class="fr-pcf">P'+(f.p||0)+' C'+(f.c||0)+' F'+(f.f||0)+'</span></div><button class="fr-rm" data-mid="'+meal.id+'" data-fi="'+fi+'">×</button></div>';
+          }
+        }).join('')
+      : '<div style="font-size:12px;color:var(--t3);text-align:center;padding:6px 0">尚無項目</div>';
+
+    var qf = loadQuickFoods();
+    var qfHtml = qf.map(function(q){
+      return '<button class="qf" data-mid="'+meal.id+'" data-name="'+q+'">'+q+'</button>';
+    }).join('');
+
+    return '<div class="meal-block" id="mb_'+meal.id+'">'+
+      '<div class="meal-header">'+
+        '<div class="meal-title">'+meal.name+'</div>'+
+        '<div style="display:flex;align-items:center;gap:10px">'+
+          '<div class="meal-kcal">'+mealKcal+' kcal</div>'+
+          '<button style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px" data-mid="'+meal.id+'" class="meal-rm-btn">🗑</button>'+
+        '</div>'+
+      '</div>'+
+      mealHeaderInfo +
+      '<div class="meal-items">'+foodRowsHtml+'</div>'+
+      '<div class="quick-foods">'+qfHtml+'</div>'+
+      '<div class="meal-add-row">'+
+        '<input class="meal-text-input food-name-input" placeholder="名稱 (例: 雞胸肉)" data-mid="'+meal.id+'" style="flex:2">'+
+        '<input class="meal-text-input food-amount-input" placeholder="份量 (例: 100g)" data-mid="'+meal.id+'" style="flex:1">'+
+        '<button class="meal-add-btn" data-mid="'+meal.id+'">加入</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  // Events
+  container.querySelectorAll('.fr-rm').forEach(function(btn){
+    btn.addEventListener('click',function(){ removeFoodFromMeal(this.dataset.mid, parseInt(this.dataset.fi)); });
+  });
+  container.querySelectorAll('.meal-rm-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){ removeMeal(this.dataset.mid); });
+  });
+  container.querySelectorAll('.qf').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var mid = this.dataset.mid;
+      var nameInp = container.querySelector('.food-name-input[data-mid="'+mid+'"]');
+      var amtInp = container.querySelector('.food-amount-input[data-mid="'+mid+'"]');
+      nameInp.value = this.dataset.name;
+      amtInp.focus(); // Focus on amount input automatically
+    });
+  });
+  container.querySelectorAll('.meal-add-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var mid = this.dataset.mid;
+      var nameInp = container.querySelector('.food-name-input[data-mid="'+mid+'"]');
+      var amtInp = container.querySelector('.food-amount-input[data-mid="'+mid+'"]');
+      var nameVal = nameInp.value.trim();
+      var amtVal = amtInp.value.trim();
+      if(!nameVal) { toast('請輸入食物名稱'); return; }
+      var fullName = amtVal ? nameVal + '(' + amtVal + ')' : nameVal;
+      
+      // 先加入一個 Loading 狀態的項目
+      addFoodToMeal(mid, fullName, 0, 0, 0, 0, true, '');
+      var meal = G.meals.find(function(me){ return me.id===mid; });
+      estimateFoodMacros(mid, fullName, meal.foods.length-1);
+      
+      nameInp.value=''; amtInp.value='';
+    });
+  });
+  container.querySelectorAll('.meal-text-input').forEach(function(inp){
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){ var btn=container.querySelector('.meal-add-btn[data-mid="'+this.dataset.mid+'"]'); if(btn) btn.click(); }
+    });
+  });
+}
+
+function estimateFoodMacros(mealId, foodName, foodIdx){
+  var prompt = '你是專業台灣飲食營養師。估算食物熱量與三大營養素。只回答JSON格式，格式：{"k":數字,"p":數字,"c":數字,"f":數字,"note":"短備註"}。食物：'+foodName;
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents: [{parts: [{text: prompt}]}],
+      generationConfig: {responseMimeType: "application/json"}
+    })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    var txt = d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '{}';
+    try{
+      var parsed = JSON.parse(txt.replace(/```json|```/g,'').trim());
+      var meal = G.meals.find(function(m){ return m.id===mealId; });
+      if(meal&&meal.foods[foodIdx]){
+        meal.foods[foodIdx].kcal = parsed.k||parsed.kcal||0;
+        meal.foods[foodIdx].p = parsed.p||parsed.protein_g||0;
+        meal.foods[foodIdx].c = parsed.c||parsed.carb_g||0;
+        meal.foods[foodIdx].f = parsed.f||parsed.fat_g||0;
+        meal.foods[foodIdx].note = parsed.note||'';
+        meal.foods[foodIdx].isLoading = false; // 解除載入狀態
+        renderMeals(); updateDashboardUI(); scheduleAutoSave();
+      }
+    }catch(e){
+      var meal = G.meals.find(function(m){ return m.id===mealId; });
+      if(meal&&meal.foods[foodIdx]){
+        meal.foods[foodIdx].isLoading = false;
+        meal.foods[foodIdx].note = '數值解析失敗，請手動修正';
+        renderMeals();
+      }
+    }
+  }).catch(function(err){
+      var meal = G.meals.find(function(m){ return m.id===mealId; });
+      if(meal&&meal.foods[foodIdx]){
+        meal.foods[foodIdx].isLoading = false;
+        meal.foods[foodIdx].note = '連線失敗，請確認 API Key 或瀏覽器環境：' + err.message;
+        renderMeals();
+      }
+  });
+}
+
+// ════════════════════════════════════
+// DASHBOARD MACROS & TOTALS
+// ════════════════════════════════════
+function getTotalMacros(){
+  return G.meals.reduce(function(acc, meal){
+    meal.foods.forEach(function(f){
+      acc.k += (f.kcal||0); acc.p += (f.p||0); acc.c += (f.c||0); acc.f += (f.f||0);
+    });
+    return acc;
+  }, {k:0, p:0, c:0, f:0});
+}
+
+function updateDashboardUI(){
+  var m = getTotalMacros();
+  var t = G.macroGoals[G.dayType] || {k:1600, p:125, c:140, f:55};
+
+  document.getElementById('total-kcal-num').textContent = m.k;
+  document.getElementById('cal-target-label').textContent = '目標 '+t.k+' kcal';
+  
+  var diff = t.k - m.k;
+  var cdEl = document.getElementById('cal-delta-label');
+  if(diff>0){ cdEl.textContent='還可吃 '+diff+' kcal'; cdEl.style.color='var(--t3)'; }
+  else { cdEl.textContent='已超出 '+Math.abs(diff)+' kcal'; cdEl.style.color='var(--rd)'; }
+  
+  var pct = Math.min(Math.round(m.k/t.k*100),150);
+  var bar = document.getElementById('cal-bar');
+  bar.style.width = Math.min(pct,100)+'%';
+  bar.className = 'cal-bar'+(pct>100?' over':'');
+
+  document.getElementById('total-p-num').textContent = m.p + 'g';
+  document.getElementById('tgt-p').textContent = '/ ' + t.p + 'g';
+  document.getElementById('total-c-num').textContent = m.c + 'g';
+  document.getElementById('tgt-c').textContent = '/ ' + t.c + 'g';
+  document.getElementById('total-f-num').textContent = m.f + 'g';
+  document.getElementById('tgt-f').textContent = '/ ' + t.f + 'g';
+}
+
+// ════════════════════════════════════
+// AI FOOD TEXT & PHOTO (GEMINI)
+// ════════════════════════════════════
+function switchTab(tab){
+  document.getElementById('tab-text').className='ai-tab'+(tab==='text'?' act':'');
+  document.getElementById('tab-photo').className='ai-tab'+(tab==='photo'?' act':'');
+  document.getElementById('panel-text').className='ai-panel'+(tab==='text'?' act':'');
+  document.getElementById('panel-photo').className='ai-panel'+(tab==='photo'?' act':'');
+}
+
+function analyzeFoodText(){
+  var input = document.getElementById('food-text-input').value.trim();
+  if(!input){ toast('請輸入食物描述'); return; }
+  var resultEl = document.getElementById('air');
+  resultEl.innerHTML='<span class="sp"></span>AI 分析中...'; resultEl.classList.add('show');
+  document.getElementById('ai-apply-btn').className='ai-result-apply';
+
+  var prompt = '你是專業台灣營養師。根據描述估算熱量與主要營養素。\n食物：'+input+'\n\nJSON格式回答：{"kcal":整數, "protein_g":整數, "carb_g":整數, "fat_g":整數, "note":"一句說明", "meal_name":"簡短食物名稱"}\n只回答JSON。';
+
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents: [{parts: [{text: prompt}]}],
+      generationConfig: {responseMimeType: "application/json"}
+    })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    var txt = d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '{}';
+    try{
+      var p = JSON.parse(txt.replace(/```json|```/g,'').trim());
+      G.pendingAiResult = p;
+      G.pendingAiResult.inputText = input; // 保留原始輸入
+      resultEl.innerHTML =
+        '📊 <strong>'+(input)+'</strong><br>'+
+        '熱量：'+p.kcal+' kcal　|　蛋白質：'+p.protein_g+'g　|　碳水：'+p.carb_g+'g　|　脂肪：'+p.fat_g+'g<br>'+
+        '<span style="font-size:11px;color:var(--t3)">'+p.note+'</span>';
+      document.getElementById('ai-apply-btn').className='ai-result-apply show';
+    } catch(e){ resultEl.innerHTML='無法解析結果，請重試'; }
+  }).catch(function(err){ resultEl.innerHTML='連線失敗，請確認 API Key 或預覽環境限制：' + err.message; });
+}
+
+function analyzeFoodPhoto(input){
+  var resultEl = document.getElementById('air');
+  var file = input.files[0]; if(!file) return;
+  resultEl.innerHTML='<span class="sp"></span>AI 辨識中...'; resultEl.classList.add('show');
+  document.getElementById('ai-apply-btn').className='ai-result-apply';
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var b64 = e.target.result.split(',')[1];
+    var prompt = '你是專業台灣營養師。分析照片食物或營養標籤。JSON格式回答：{"kcal":整數, "protein_g":整數, "carb_g":整數, "fat_g":整數, "note":"一句說明", "meal_name":"簡短名稱"}\n只回答JSON。';
+
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents: [{
+          parts: [
+            {text: prompt},
+            {inlineData: {mimeType: file.type, data: b64}}
+          ]
+        }],
+        generationConfig: {responseMimeType: "application/json"}
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      var txt = d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '{}';
+      try{
+        var p = JSON.parse(txt.replace(/```json|```/g,'').trim());
+        G.pendingAiResult = p;
+        resultEl.innerHTML =
+          '📊 <strong>'+(p.meal_name||'照片食物')+'</strong><br>'+
+          '熱量：'+p.kcal+' kcal　|　蛋白質：'+p.protein_g+'g　|　碳水：'+p.carb_g+'g　|　脂肪：'+p.fat_g+'g<br>'+
+          '<span style="font-size:11px;color:var(--t3)">'+p.note+'</span>';
+        document.getElementById('ai-apply-btn').className='ai-result-apply show';
+      } catch(e){ resultEl.innerHTML='無法解析，請重試'; }
+    }).catch(function(err){ resultEl.innerHTML='連線失敗，請確認 API Key 或預覽環境限制：' + err.message; });
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyAiResult(){
+  var r = G.pendingAiResult;
+  if(!r) return;
+  if(!G.meals.length){ addMeal(); }
+  var targetMeal = G.meals[G.meals.length-1];
+  
+  // 優先使用使用者手動輸入的名稱，若無則使用 AI 辨識出的名稱
+  var finalName = r.inputText ? r.inputText : (r.meal_name || 'AI辨識食物');
+  
+  targetMeal.foods.push({
+    name: finalName, 
+    kcal: r.kcal||0, 
+    p: r.protein_g||0, 
+    c: r.carb_g||0, 
+    f: r.fat_g||0, 
+    note: r.note||'',
+    isLoading: false
+  });
+  renderMeals();
+  updateDashboardUI();
+  scheduleAutoSave();
+  document.getElementById('air').classList.remove('show');
+  document.getElementById('ai-apply-btn').className='ai-result-apply';
+  document.getElementById('food-text-input').value='';
+  G.pendingAiResult = null;
+  toast('✓ 已加入'+targetMeal.name);
+}
+
+// ════════════════════════════════════
+// ACTIVITY
+// ════════════════════════════════════
+function toggleManual(){
+  var sec = document.getElementById('act-manual-section');
+  var toggle = document.getElementById('act-manual-toggle');
+  var isOpen = sec.classList.contains('open');
+  sec.classList.toggle('open');
+  toggle.textContent = isOpen ? '▶ 手動補充訓練項目' : '▼ 手動補充訓練項目';
+}
+
+function renderActivityPresets(){
+  var row = document.getElementById('act-presets');
+  row.innerHTML='<span style="font-size:12px;color:var(--t3);align-self:center">新增：</span>';
+  ACTIVITY_PRESETS.forEach(function(p){
+    var btn=document.createElement('button');
+    btn.className='act-preset';
+    btn.textContent=p.icon+' '+p.name;
+    btn.addEventListener('click',function(){ addActivity(p); });
+    row.appendChild(btn);
+  });
+}
+
+function addActivity(preset){
+  G.activities.push({id:preset.id,name:preset.name,icon:preset.icon,duration:30,calPerMin:preset.calPerMin});
+  renderActivities(); scheduleAutoSave();
+}
+function removeActivity(idx){
+  G.activities.splice(idx,1);
+  renderActivities(); scheduleAutoSave();
+}
+function renderActivities(){
+  var list=document.getElementById('act-list');
+  if(!G.activities.length){ list.innerHTML='<div style="font-size:12px;color:var(--t3);text-align:center;padding:12px">點下方新增</div>'; return; }
+  list.innerHTML=G.activities.map(function(a,i){
+    var cal=Math.round(a.duration*a.calPerMin);
+    return '<div class="act-row">'+
+      '<span class="act-icon">'+a.icon+'</span>'+
+      '<div><div class="act-name">'+a.name+'</div><div class="act-sub">~'+cal+' kcal</div></div>'+
+      '<div class="act-dur"><input type="number" value="'+a.duration+'" min="1" max="300" data-i="'+i+'" placeholder="分"><div class="mu" style="font-size:10px;color:var(--t3);text-align:center">分鐘</div></div>'+
+      '<button class="act-rm" data-i="'+i+'">✕</button></div>';
+  }).join('');
+
+  list.querySelectorAll('.act-dur input').forEach(function(inp){
+    inp.addEventListener('input',function(){ G.activities[parseInt(this.dataset.i)].duration=parseInt(this.value)||0; renderActivities(); scheduleAutoSave(); });
+  });
+  list.querySelectorAll('.act-rm').forEach(function(btn){
+    btn.addEventListener('click',function(){ removeActivity(parseInt(this.dataset.i)); });
+  });
+}
+
+function updateGarminUI(){
+  var g = G.garmin;
+  var hasData = g.total||g.active||g.steps||g.hrv;
+  document.getElementById('act-active-cal').textContent = g.active||'—';
+  document.getElementById('act-total-cal').textContent = g.total||'—';
+  document.getElementById('act-steps').textContent = g.steps ? (g.steps>1000?(g.steps/1000).toFixed(1)+'k':g.steps) : '—';
+  document.getElementById('act-hrv').textContent = g.hrv||'—';
+
+  var badge = document.getElementById('act-sync-badge');
+  var sub = document.getElementById('act-sync-sub');
+  if(hasData){ badge.textContent='已同步'; badge.className='act-sync-badge'; sub.textContent = '最後更新：'+(G.garminSyncTime||'今日'); } 
+  else { badge.textContent='等待資料'; badge.className='act-sync-badge pending'; sub.textContent='iOS 捷徑自動同步'; }
+}
+
+// ════════════════════════════════════
+// AUTO SAVE
+// ════════════════════════════════════
+function scheduleAutoSave(){
+  clearTimeout(G.autoSaveTimer);
+  G.autoSaveTimer = setTimeout(bgSave, 1500);
+}
+
+function bgSave(){
+  var record = buildRecord();
+  var hist = loadItem('history',[]);
+  var idx=-1;
+  for(var i=0;i<hist.length;i++){ if(hist[i].date===record.date){idx=i;break;} }
+  if(idx>=0) hist[idx]=record; else hist.unshift(record);
+  saveItem('history', hist.slice(0,120));
+  saveItem(todayKey(), record);
+
+  if(GAS_URL){
+    fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(record),headers:{'Content-Type':'application/json'}})
+      .then(function(){ G.lastSyncTime=new Date(); updateSyncStatus(true); })
+      .catch(function(){ updateSyncStatus(false,true); });
+  }
+}
+
+function buildRecord(){
+  var m = getTotalMacros();
+  var gcal = G.garmin.total||null;
+  return {
+    date: todayStr(),
+    dayType: G.dayType,
+    weight:{ morning: parseFloat(document.getElementById('wm').value)||null, evening: parseFloat(document.getElementById('we').value)||null },
+    meals: clone(G.meals),
+    totalKcal: m.k, totalP: m.p, totalC: m.c, totalF: m.f,
+    calTarget: G.macroGoals[G.dayType].k,
+    activities: clone(G.activities),
+    garmin: clone(G.garmin),
+    deficit: gcal ? gcal-m.k : null
+  };
+}
+
+function updateSyncStatus(ok,err){
+  var dot=document.getElementById('sync-dot');
+  var lbl=document.getElementById('sync-label');
+  if(err){dot.className='sync-dot';lbl.textContent='同步失敗';return;}
+  if(ok){dot.className='sync-dot ok';lbl.textContent='已同步 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});return;}
+  dot.className='sync-dot';lbl.textContent='尚未同步';
+}
+
+// ════════════════════════════════════
+// LOAD TODAY
+// ════════════════════════════════════
+function loadTodayFromStorage(){
+  var saved = loadItem(todayKey(), null);
+  if(saved){
+    G.dayType = saved.dayType||'train';
+    document.getElementById('btn-train').className='dbtn'+(G.dayType==='train'?' atr':'');
+    document.getElementById('btn-rest').className='dbtn'+(G.dayType==='rest'?' are':'');
+    if(saved.weight){
+      if(saved.weight.morning) document.getElementById('wm').value=saved.weight.morning;
+      if(saved.weight.evening) document.getElementById('we').value=saved.weight.evening;
+    }
+    if(saved.meals) G.meals=saved.meals;
+    if(saved.activities) G.activities=saved.activities;
+    if(saved.garmin) G.garmin=saved.garmin;
+  }
+  prefillYesterdayWeight();
+  renderMeals();
+  renderActivities();
+  calcWeightDelta();
+  updateSyncStatus();
+  updateGarminUI();
+  updateDashboardUI();
+}
+
+// ════════════════════════════════════
+// SUMMARY
+// ════════════════════════════════════
+function updateSummary(){
+  var m = getTotalMacros();
+  var t = G.macroGoals[G.dayType];
+  var gcal = G.garmin.total||null;
+
+  var defEl=document.getElementById('def-num');
+  var defSub=document.getElementById('def-sub');
+  if(gcal){
+    var def=gcal-m.k;
+    defEl.textContent=(def>0?'-':'+')+Math.abs(def);
+    defEl.style.color=def>200?'var(--gn)':def>0?'var(--am)':'var(--rd)';
+    defSub.textContent=def>200?'✓ 有效赤字，減脂進行中':def>0?'小赤字，勉強達標':'盈餘，攝入超過消耗';
+    var bp=Math.min(Math.round(m.k/gcal*100),150);
+    document.getElementById('cbar').style.width=Math.min(bp,100)+'%';
+    document.getElementById('cbar').className='cb'+(bp>100?' over':'');
+    document.getElementById('cbarlb').textContent=bp+'% 攝入/消耗比';
+  } else {
+    defEl.textContent='—';defEl.style.color='var(--t3)';
+    defSub.textContent='需 Garmin 同步總消耗';
+    document.getElementById('cbar').style.width='0%';
+    document.getElementById('cbarlb').textContent='—';
+  }
+
+  var dtEl=document.getElementById('s-dt');
+  dtEl.textContent=G.dayType==='train'?'🏋️ 訓練日':'🧘 休息日';
+  dtEl.style.color=G.dayType==='train'?'var(--nv3)':'#7c5cbf';
+
+  var wm=parseFloat(document.getElementById('wm').value);
+  var we=parseFloat(document.getElementById('we').value);
+  var wtEl=document.getElementById('s-wt');
+  if(wm){
+    wtEl.textContent=wm+'kg'+(we?' → '+we+'kg ('+(we>wm?'+':'')+(we-wm).toFixed(1)+')':'');
+    wtEl.className='sv '+(we&&we<wm?'vg':we&&we>wm?'va':'');
+  } else { wtEl.textContent='未記錄';wtEl.className='sv'; }
+
+  document.getElementById('s-in').textContent = m.k+' kcal (目標 '+t.k+')';
+  document.getElementById('s-p').textContent = m.p+' g (目標 '+t.p+')';
+  document.getElementById('s-c').textContent = m.c+' g (目標 '+t.c+')';
+  document.getElementById('s-f').textContent = m.f+' g (目標 '+t.f+')';
+
+  var mealSummary=G.meals.length?G.meals.map(function(me){
+    var k=me.foods.reduce(function(s,f){return s+(f.kcal||0);},0);
+    return me.name+' '+k+'kcal';
+  }).join(' · '):'尚無紀錄';
+  document.getElementById('s-meals').textContent=mealSummary;
+  document.getElementById('s-gc').textContent=gcal?gcal+' kcal':'未同步';
+  var actSummary=G.activities.length?G.activities.map(function(a){return a.icon+a.name+' '+a.duration+'分';}).join(' · '):'無補充';
+  document.getElementById('s-act').textContent=actSummary;
+}
+
+// ════════════════════════════════════
+// AI ADVICE (GEMINI)
+// ════════════════════════════════════
+function genAdvice(){
+  var el=document.getElementById('adv');
+  el.innerHTML='<span class="sp"></span>AI 分析中...';
+  document.getElementById('goal-adjust-box').className='goal-adjust-box';
+
+  var m=getTotalMacros();
+  var t=G.macroGoals[G.dayType];
+  var gcal=G.garmin.total||null;
+  var hist=loadItem('history',[]).slice(0,7);
+  var avgDef=null;
+  if(hist.length>2){
+    var defs=hist.filter(function(r){return r.deficit!==null&&r.deficit!==undefined;});
+    if(defs.length>0) avgDef=Math.round(defs.reduce(function(s,r){return s+r.deficit;},0)/defs.length);
+  }
+  var mealDesc=G.meals.map(function(me){
+    return me.name+'（'+me.foods.map(function(f){return f.name+(f.kcal?' '+f.kcal+'kcal':'');}).join('、')+'）';
+  }).join('\n');
+
+  var prompt='你是台灣專業運動營養師。根據以下數據，以繁體中文給出分析與建議。\n\n'+
+    '今日狀態：'+(G.dayType==='train'?'訓練日':'休息日')+'\n'+
+    '早晨體重：'+(document.getElementById('wm').value||'未記錄')+'kg\n'+
+    '今日目標：熱量 '+t.k+'kcal / 蛋白 '+t.p+'g / 碳水 '+t.c+'g / 脂肪 '+t.f+'g\n'+
+    '實際攝入：熱量 '+m.k+'kcal / 蛋白 '+m.p+'g / 碳水 '+m.c+'g / 脂肪 '+m.f+'g\n'+
+    '今日飲食：\n'+mealDesc+'\n'+
+    'Garmin消耗：'+(gcal||'未知')+' kcal\n'+
+    '近7天平均赤字：'+(avgDef!==null?avgDef+'kcal':'資料不足')+'\n\n'+
+    '請提供：\n1. 3條簡短具體建議（每條50字內，針對營養素比例）\n'+
+    '2. 若近期赤字/盈餘明顯，評估是否調整熱量目標（格式：GOAL_ADJUST:{train:數字,rest:數字,reason:"原因"}）\n'+
+    '只需在需要調整時輸出GOAL_ADJUST，先給建議，最後才給GOAL_ADJUST。';
+
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents: [{parts: [{text: prompt}]}],
+    })
+  }).then(function(r){return r.json();}).then(function(d){
+    var text=d.candidates && d.candidates[0] && d.candidates[0].content.parts[0].text || '無法生成建議';
+    var gaMatch = text.match(/GOAL_ADJUST:\s*(\{[^}]+\})/);
+    if(gaMatch){
+      try{
+        var ga=JSON.parse(gaMatch[1].replace(/```json|```/g,'').trim());
+        G.pendingGoalAdjust=ga;
+        text=text.replace(/GOAL_ADJUST:\s*\{[^}]+\}/,'').trim();
+        document.getElementById('goal-adjust-detail').innerHTML=
+          '📈 訓練日熱量：<strong>'+G.macroGoals.train.k+'</strong> → <strong>'+ga.train+'</strong> kcal<br>'+
+          '📉 休息日熱量：<strong>'+G.macroGoals.rest.k+'</strong> → <strong>'+ga.rest+'</strong> kcal<br>'+
+          '<span style="font-size:12px;color:var(--t3)">理由：'+ga.reason+'</span>';
+        document.getElementById('goal-adjust-box').className='goal-adjust-box show';
+      }catch(e){}
+    }
+    el.textContent=text;
+  }).catch(function(err){ el.textContent='連線失敗，請確認 API Key 或瀏覽器環境：' + err.message; });
+}
+
+function adoptGoalAdjust(){
+  if(!G.pendingGoalAdjust) return;
+  G.macroGoals.train.k = G.pendingGoalAdjust.train;
+  G.macroGoals.rest.k = G.pendingGoalAdjust.rest;
+  saveItem('macro_goals', G.macroGoals);
+  renderMacroGoalInputs();
+  updateDashboardUI();
+  dismissGoalAdjust();
+  toast('✓ 熱量目標已更新');
+}
+function dismissGoalAdjust(){
+  document.getElementById('goal-adjust-box').className='goal-adjust-box';
+  G.pendingGoalAdjust=null;
+}
+
+// ════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════
+function renderCharts(){
+  var hist=loadItem('history',[]);
+  var sorted=hist.slice().reverse();
+  var labels=[],wtData=[];
+  sorted.forEach(function(r){
+    labels.push(r.date.slice(5));
+    wtData.push(r.weight&&r.weight.morning?r.weight.morning:null);
+  });
+  var wtCtx=document.getElementById('wtc').getContext('2d');
+  if(G.wtChart) G.wtChart.destroy();
+  if(labels.length<2){ document.getElementById('wt-chart-wrap').innerHTML='<div class="chart-empty">至少需要 2 天數據</div>'; return; }
+  var baseFont={family:"Arial,sans-serif",size:11};
+  G.wtChart=new Chart(wtCtx,{
+    type:'line',
+    data:{labels:labels,datasets:[{
+      label:'早晨體重(kg)',data:wtData,
+      borderColor:'#1e4fa0',backgroundColor:'rgba(30,79,160,0.08)',
+      borderWidth:2.5,pointBackgroundColor:'#1e4fa0',pointRadius:4,
+      tension:0.4,spanGaps:true,fill:true
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.y?ctx.parsed.y.toFixed(1)+' kg':'';} }}},
+      scales:{x:{ticks:{font:baseFont,color:'#8a9abb'},grid:{color:'rgba(0,0,0,.04)'}},
+        y:{ticks:{font:baseFont,color:'#8a9abb',callback:function(v){return v.toFixed(1);}},grid:{color:'rgba(0,0,0,.04)'}}}}
+  });
+}
+
+function renderHistory(){
+  var hist=loadItem('history',[]);
+  var tbody=document.getElementById('hbody');
+  if(!hist.length){ tbody.innerHTML='<tr><td colspan="5" style="color:var(--t3);text-align:center;padding:20px">尚無紀錄</td></tr>'; return; }
+  tbody.innerHTML=hist.slice(0,30).map(function(r){
+    var intake=r.totalKcal||0;
+    var def=r.deficit;
+    return '<tr>'+
+      '<td>'+r.date.slice(5)+'</td>'+
+      '<td><span class="bg '+(r.dayType==='train'?'bgt':'bgr')+'">'+(r.dayType==='train'?'訓':'休')+'</span></td>'+
+      '<td>'+(r.weight&&r.weight.morning?r.weight.morning+'kg':'—')+'</td>'+
+      '<td style="color:var(--nv2);font-weight:700">'+intake+' kcal</td>'+
+      '<td style="color:'+(def===null||def===undefined?'var(--t3)':def>200?'var(--gn)':def>0?'var(--am)':'var(--rd)')+'">'+
+        (def===null||def===undefined?'—':(def>0?'-':'+')+Math.abs(def))+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════
+function renderMacroGoalInputs(){
+  ['train','rest'].forEach(function(t){
+    document.getElementById('goal-k-'+t).value = G.macroGoals[t].k || '';
+    document.getElementById('goal-p-'+t).value = G.macroGoals[t].p || '';
+    document.getElementById('goal-c-'+t).value = G.macroGoals[t].c || '';
+    document.getElementById('goal-f-'+t).value = G.macroGoals[t].f || '';
+  });
+}
+
+function saveMacroGoals(){
+  ['train','rest'].forEach(function(t){
+    G.macroGoals[t].k = parseInt(document.getElementById('goal-k-'+t).value) || 0;
+    G.macroGoals[t].p = parseInt(document.getElementById('goal-p-'+t).value) || 0;
+    G.macroGoals[t].c = parseInt(document.getElementById('goal-c-'+t).value) || 0;
+    G.macroGoals[t].f = parseInt(document.getElementById('goal-f-'+t).value) || 0;
+  });
+  saveItem('macro_goals', G.macroGoals);
+  updateDashboardUI();
+  renderMeals(); // Re-render to update meal suggestions
+  toast('✓ 營養目標已儲存');
+}
+
+function resetMacroGoals(){
+  G.macroGoals = clone(DEF_MACRO_GOALS);
+  localStorage.removeItem('macro_goals');
+  renderMacroGoalInputs();
+  updateDashboardUI();
+  renderMeals();
+  toast('已還原預設目標');
+}
+
+function renderQuickFoodsEditor(){
+  var qf=loadQuickFoods();
+  document.getElementById('quick-foods-edit').value=qf.join('\n');
+}
+
+function saveQuickFoods(){
+  var raw=document.getElementById('quick-foods-edit').value.trim();
+  var lines=raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  saveItem('quick_foods_raw',lines);
+  renderMeals();
+  toast('✓ 快捷食物已儲存');
+}
+
+var _tt;
+function toast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(function(){ el.classList.remove('show'); },2500);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  init();
+
+  var el = function(id){ return document.getElementById(id); };
+
+  // Fix all previously-inline onclicks
+  el('btn-manual-sync')   && el('btn-manual-sync').addEventListener('click', bgSave);
+  el('tab-text')          && el('tab-text').addEventListener('click', function(){ switchTab('text'); });
+  el('tab-photo')         && el('tab-photo').addEventListener('click', function(){ switchTab('photo'); });
+  el('btn-food-text-go')  && el('btn-food-text-go').addEventListener('click', analyzeFoodText);
+  el('food-text-input')   && el('food-text-input').addEventListener('keydown', function(e){
+    if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); analyzeFoodText(); }
+  });
+  el('ai-apply-btn')      && el('ai-apply-btn').addEventListener('click', applyAiResult);
+  el('act-manual-toggle') && el('act-manual-toggle').addEventListener('click', toggleManual);
+  el('btn-adopt-goal')    && el('btn-adopt-goal').addEventListener('click', adoptGoalAdjust);
+  el('btn-dismiss-goal')  && el('btn-dismiss-goal').addEventListener('click', dismissGoalAdjust);
+
+  // Key setup page save button
+  el('btn-save-keys') && el('btn-save-keys').addEventListener('click', saveKeys);
+
+  // Pre-fill key fields in settings page
+  var gk = localStorage.getItem('gemini_key');
+  var gu = localStorage.getItem('sheets_url');
+  if(gk && el('key-gemini-settings')) el('key-gemini-settings').value = gk;
+  if(gu && el('key-gas-settings'))    el('key-gas-settings').value = gu;
+
+  // Clear keys button
+  el('btn-clear-keys') && el('btn-clear-keys').addEventListener('click', function(){
+    localStorage.removeItem('gemini_key');
+    localStorage.removeItem('sheets_url');
+    GEMINI_API_KEY = ''; GAS_URL = '';
+    if(el('key-gemini-settings')) el('key-gemini-settings').value = '';
+    if(el('key-gas-settings'))    el('key-gas-settings').value = '';
+    el('key-status').textContent = '已清除';
+    toast('金鑰已清除');
+  });
+
+  // Show key setup if missing
+  if(!localStorage.getItem('gemini_key')){
+    setTimeout(showKeySetup, 800);
+  }
+
+  // iOS PWA hint
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isStandalone = ('standalone' in navigator) && navigator.standalone;
+  if(isIOS && !isStandalone && !localStorage.getItem('pwa_hint_shown')){
+    setTimeout(showPWAHint, 2000);
+  }
+
+  // Android install prompt
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    G._deferredInstall = e;
+    showAndroidInstallBtn();
+  });
+});
+
+// ── Key Setup Modal ──
+function showKeySetup(){
+  if(document.getElementById('key-modal')) return;
+  var div = document.createElement('div');
+  div.id = 'key-modal';
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(15,45,94,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  div.innerHTML =
+    '<div style="background:#fff;border-radius:18px;padding:24px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(15,45,94,.2)">' +
+      '<div style="font-size:22px;margin-bottom:4px">🔑</div>' +
+      '<div style="font-size:16px;font-weight:700;color:#0f2d5e;margin-bottom:4px">初次設定</div>' +
+      '<div style="font-size:12px;color:#8a9abb;margin-bottom:18px">Key 只存在你的手機，不會上傳到任何地方</div>' +
+      '<div style="font-size:11px;font-weight:700;color:#4a5f80;margin-bottom:4px">Gemini API Key</div>' +
+      '<input id="setup-gemini" type="password" placeholder="AIzaSy..." style="width:100%;border:1.5px solid #dde3ef;border-radius:9px;padding:10px 12px;font-family:monospace;font-size:13px;outline:none;margin-bottom:12px">' +
+      '<div style="font-size:11px;font-weight:700;color:#4a5f80;margin-bottom:4px">Google Sheets Web App URL</div>' +
+      '<input id="setup-gas" type="text" placeholder="https://script.google.com/..." style="width:100%;border:1.5px solid #dde3ef;border-radius:9px;padding:10px 12px;font-family:monospace;font-size:12px;outline:none;margin-bottom:18px">' +
+      '<button id="btn-save-keys" style="width:100%;background:#1e4fa0;color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">儲存並開始使用</button>' +
+      '<div style="font-size:11px;color:#8a9abb;text-align:center;margin-top:10px">之後可在「設定」頁面修改</div>' +
+    '</div>';
+  document.body.appendChild(div);
+  document.getElementById('btn-save-keys').addEventListener('click', saveKeys);
+}
+
+function saveKeys(){
+  var g = (document.getElementById('setup-gemini')||{}).value ||
+          (document.getElementById('key-gemini-settings')||{}).value || '';
+  var s = (document.getElementById('setup-gas')||{}).value ||
+          (document.getElementById('key-gas-settings')||{}).value || '';
+  g = g.trim(); s = s.trim();
+  if(g){ localStorage.setItem('gemini_key', g); GEMINI_API_KEY = g; }
+  if(s){ localStorage.setItem('sheets_url', s); GAS_URL = s; }
+  var modal = document.getElementById('key-modal');
+  if(modal) modal.remove();
+  if(g||s) toast('✓ 設定已儲存');
+  else toast('請至少填入 Gemini API Key');
+  // Update status display
+  var ks = document.getElementById('key-status');
+  if(ks) ks.innerHTML = (g?'<span style="color:#00875a">✓ Gemini Key 已設定</span>':'<span style="color:#c0392b">✗ 尚未設定 Gemini Key</span>') + 
+    (s?' &nbsp; <span style="color:#00875a">✓ Sheets URL 已設定</span>':'');
+}
+
+// ── PWA Hints ──
+function showPWAHint(){
+  var div = document.createElement('div');
+  div.id = 'pwa-hint';
+  div.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f2d5e;color:#fff;padding:14px 18px;border-radius:16px;font-size:13px;line-height:1.7;box-shadow:0 6px 24px rgba(15,45,94,.35);z-index:9998;max-width:300px;text-align:center';
+  div.innerHTML =
+    '<div style="font-size:20px;margin-bottom:6px">📲</div>' +
+    '<strong>加到 iPhone 主畫面</strong><br>' +
+    '<span style="color:#a8c4f5;font-size:12px">點底部 <strong style="color:#fff">分享 ⎙</strong> → 「加入主畫面」</span>' +
+    '<div style="margin-top:10px"><button id="pwa-close" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 16px;border-radius:999px;font-size:12px;cursor:pointer">知道了</button></div>';
+  document.body.appendChild(div);
+  document.getElementById('pwa-close').addEventListener('click', function(){
+    div.remove();
+    localStorage.setItem('pwa_hint_shown','1');
+  });
+}
+
+function showAndroidInstallBtn(){
+  var bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;background:#1e4fa0;color:#fff;padding:13px 16px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 18px rgba(30,79,160,.4);z-index:9998;font-size:13px';
+  bar.innerHTML =
+    '<span>📲 <strong>安裝 App</strong> 到主畫面</span>' +
+    '<div style="display:flex;gap:8px">' +
+      '<button id="pwa-install-btn" style="background:#fff;color:#1e4fa0;border:none;padding:7px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">安裝</button>' +
+      '<button id="pwa-close-bar" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 10px;border-radius:8px;font-size:13px;cursor:pointer">✕</button>' +
+    '</div>';
+  document.body.appendChild(bar);
+  document.getElementById('pwa-install-btn').addEventListener('click', function(){
+    if(G._deferredInstall){ G._deferredInstall.prompt(); G._deferredInstall.userChoice.then(function(){ bar.remove(); }); }
+  });
+  document.getElementById('pwa-close-bar').addEventListener('click', function(){ bar.remove(); });
+}
+</script>
+</body>
+</html>
