@@ -696,7 +696,9 @@ function removeMeal(id){
 function addFoodToMeal(mealId, foodName, kcal, p, c, f, isLoading, note){
   var meal = G.meals.find(function(m){ return m.id===mealId; });
   if(!meal) return;
-  meal.foods.push({name:foodName, kcal:kcal||0, p:p||0, c:c||0, f:f||0, isLoading:isLoading||false, note:note||''});
+  // isPending = 加入清單但尚未 AI 估算（等按「完成這餐」才批次送出）
+  var pending = !isLoading && (kcal===0 && p===0 && c===0 && f===0);
+  meal.foods.push({name:foodName, kcal:kcal||0, p:p||0, c:c||0, f:f||0, isLoading:false, isPending:pending, note:note||''});
   renderMeals();
   updateDashboardUI();
   scheduleAutoSave();
@@ -754,12 +756,20 @@ function renderMeals(){
       ? meal.foods.map(function(f,fi){
           if(f.isLoading) {
             return '<div class="food-row"><div class="fr-left"><span class="fr-name">'+f.name+'</span><span class="fr-loading"><span class="sp"></span> AI 計算中...</span></div><button class="fr-rm" data-mid="'+meal.id+'" data-fi="'+fi+'">×</button></div>';
+          } else if(f.isPending) {
+            return '<div class="food-row" style="border-color:#c5d6f5;background:var(--bl)"><div class="fr-left"><span class="fr-name">'+f.name+'</span><span class="fr-note" style="color:var(--nv3)">待估算</span></div><button class="fr-rm" data-mid="'+meal.id+'" data-fi="'+fi+'">×</button></div>';
           } else {
             var noteHtml = f.note ? '<span class="fr-note">'+f.note+'</span>' : '';
             return '<div class="food-row"><div class="fr-left"><span class="fr-name">'+f.name+'</span>'+noteHtml+'</div><div class="fr-right"><span class="fr-kcal">'+(f.kcal||0)+' kcal</span><span class="fr-pcf">P'+(f.p||0)+' C'+(f.c||0)+' F'+(f.f||0)+'</span></div><button class="fr-rm" data-mid="'+meal.id+'" data-fi="'+fi+'">×</button></div>';
           }
         }).join('')
       : '<div style="font-size:12px;color:var(--t3);text-align:center;padding:6px 0">尚無項目</div>';
+
+    var hasPending = meal.foods.some(function(f){ return f.isPending; });
+    var hasLoading = meal.foods.some(function(f){ return f.isLoading; });
+    var mealDoneBtn = meal.foods.length > 0
+      ? '<button class="meal-done-btn" data-mid="'+meal.id+'" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Noto Sans TC\',sans-serif;'+(hasPending?'background:var(--nv3);color:#fff':'background:#edf0f7;color:var(--t3);pointer-events:none')+'">'+(hasLoading?'<span class="sp" style="margin-right:4px"></span>AI 估算中...':hasPending?'✓ 完成這餐，AI 一次估算':'✓ 已完成估算')+'</button>'
+      : '';
 
     var qf = loadQuickFoods();
     var qfHtml = qf.map(function(q){
@@ -782,6 +792,7 @@ function renderMeals(){
         '<input class="meal-text-input food-amount-input" placeholder="份量 (例: 100g)" data-mid="'+meal.id+'" style="flex:1">'+
         '<button class="meal-add-btn" data-mid="'+meal.id+'">加入</button>'+
       '</div>'+
+      mealDoneBtn+
     '</div>';
   }).join('');
 
@@ -810,13 +821,16 @@ function renderMeals(){
       var amtVal = amtInp.value.trim();
       if(!nameVal) { toast('請輸入食物名稱'); return; }
       var fullName = amtVal ? nameVal + '(' + amtVal + ')' : nameVal;
-      
-      // 先加入一個 Loading 狀態的項目
-      addFoodToMeal(mid, fullName, 0, 0, 0, 0, true, '');
-      var meal = G.meals.find(function(me){ return me.id===mid; });
-      estimateFoodMacros(mid, fullName, meal.foods.length-1);
-      
+      // 加入清單，isPending=true，等按「完成這餐」才批次估算
+      addFoodToMeal(mid, fullName, 0, 0, 0, 0, false, '');
       nameInp.value=''; amtInp.value='';
+      nameInp.focus();
+    });
+  });
+  container.querySelectorAll('.meal-done-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var mid = this.dataset.mid;
+      estimateMealBatch(mid);
     });
   });
   container.querySelectorAll('.meal-text-input').forEach(function(inp){
@@ -886,9 +900,91 @@ function estimateFoodMacros(mealId, foodName, foodIdx){
   });
 }
 
-// ════════════════════════════════════
-// DASHBOARD MACROS & TOTALS
-// ════════════════════════════════════
+// 批次估算整餐所有 pending 食物（一次 API 呼叫）
+function estimateMealBatch(mealId){
+  var meal = G.meals.find(function(m){ return m.id===mealId; });
+  if(!meal) return;
+
+  var pendingItems = meal.foods.map(function(f,i){ return {idx:i, name:f.name, isPending:f.isPending}; })
+                               .filter(function(x){ return x.isPending; });
+  if(!pendingItems.length) return;
+
+  if(!GEMINI_API_KEY){
+    pendingItems.forEach(function(x){
+      meal.foods[x.idx].note = '⚠️ 請先設定 Gemini API Key';
+      meal.foods[x.idx].isPending = false;
+    });
+    renderMeals();
+    toast('請先在「設定」頁填入 Gemini API Key');
+    return;
+  }
+
+  // 標記為 loading
+  pendingItems.forEach(function(x){
+    meal.foods[x.idx].isLoading = true;
+    meal.foods[x.idx].isPending = false;
+  });
+  renderMeals();
+
+  var foodList = pendingItems.map(function(x,i){ return (i+1)+'. '+x.name; }).join('\n');
+  var prompt =
+    '你是專業台灣飲食營養師。請估算以下每項食物的熱量與三大營養素（以台灣常見份量為基準）。\n' +
+    '只回答純 JSON 陣列，格式：[{"k":整數,"p":整數,"c":整數,"f":整數,"note":"10字內備註"}, ...]\n' +
+    '陣列長度必須與食物數量相同，順序對應。不加任何說明或 markdown。\n\n' +
+    '食物清單：\n' + foodList;
+
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      contents: [{parts: [{text: prompt}]}],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+    })
+  })
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(function(d){
+    var txt = '';
+    try { txt = d.candidates[0].content.parts[0].text || '[]'; } catch(e){ txt = '[]'; }
+    txt = txt.replace(/```json|```/g,'').trim();
+    var m2 = txt.match(/\[[\s\S]*\]/);
+    if(m2) txt = m2[0];
+    var results = JSON.parse(txt);
+    var meal2 = G.meals.find(function(m){ return m.id===mealId; });
+    if(!meal2) return;
+    pendingItems.forEach(function(x, ri){
+      var r = results[ri] || {};
+      if(meal2.foods[x.idx]){
+        meal2.foods[x.idx].kcal      = Math.round(r.k || r.kcal      || 0);
+        meal2.foods[x.idx].p         = Math.round(r.p || r.protein_g || 0);
+        meal2.foods[x.idx].c         = Math.round(r.c || r.carb_g    || 0);
+        meal2.foods[x.idx].f         = Math.round(r.f || r.fat_g     || 0);
+        meal2.foods[x.idx].note      = r.note || '';
+        meal2.foods[x.idx].isLoading = false;
+        meal2.foods[x.idx].isPending = false;
+      }
+    });
+    renderMeals(); updateDashboardUI(); scheduleAutoSave();
+    toast('✓ '+meal2.name+' 估算完成（'+pendingItems.length+'項）');
+  })
+  .catch(function(err){
+    var meal2 = G.meals.find(function(m){ return m.id===mealId; });
+    if(meal2){
+      pendingItems.forEach(function(x){
+        if(meal2.foods[x.idx]){
+          meal2.foods[x.idx].isLoading = false;
+          meal2.foods[x.idx].isPending = false;
+          meal2.foods[x.idx].note = '估算失敗，請重試';
+        }
+      });
+      renderMeals();
+    }
+    toast('估算失敗：' + (err.message||'請確認 API Key'));
+    console.error('estimateMealBatch:', err);
+  });
+}
 function getTotalMacros(){
   return G.meals.reduce(function(acc, meal){
     meal.foods.forEach(function(f){
